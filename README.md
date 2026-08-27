@@ -67,6 +67,17 @@ npm run lint
 - `GET /api/ledger/sequence` - Get current ledger sequence number
 - `DELETE /api/ledger/clear` - Clear all ledger entries
 
+### Contract Simulation
+- `POST /api/simulate` - Simulate a Soroban contract invocation
+  - Content-Type: `application/json`
+  - Body parameters:
+    - `contractId` (required): Contract address
+    - `method` (required): Contract function name
+    - `args` (optional): Array of function arguments
+    - `source` (optional): Source account public key
+    - `fee` (optional): Transaction fee in stroops
+  - Returns: Simulation result with events, auth requirements, and resource costs
+
 ### Example: Upload WASM
 
 ```bash
@@ -109,6 +120,36 @@ Response:
 }
 ```
 
+### Example: Simulate Contract Invocation
+
+```bash
+curl -X POST http://localhost:3000/api/simulate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "contractId": "CA3D5KRYM6CB7OWQ6TWYRR3Z4T7GNZLKERYNZGGA5SOAOPIFY6YQGAXE",
+    "method": "increment",
+    "args": []
+  }'
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "Simulation completed successfully",
+  "data": {
+    "success": true,
+    "result": "...",
+    "events": [],
+    "transactionData": "...",
+    "minResourceFee": "100",
+    "latestLedger": 12345
+  },
+  "requestId": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2026-08-27T10:30:00.000Z"
+}
+```
+
 ## Project Structure
 
 ```
@@ -118,17 +159,22 @@ sorosim-backend/
 │   │   └── multer.ts          # Multer configuration for file uploads
 │   ├── controllers/
 │   │   ├── wasmController.ts  # WASM upload controller
-│   │   └── ledgerController.ts # Ledger store controller
+│   │   ├── ledgerController.ts # Ledger store controller
+│   │   └── simulationController.ts # Simulation controller
 │   ├── engine/
 │   │   ├── sorobanClient.ts   # Soroban RPC client wrapper
 │   │   └── index.ts           # Engine exports
 │   ├── routes/
 │   │   ├── wasmRoutes.ts      # WASM API routes
-│   │   └── ledgerRoutes.ts    # Ledger store API routes
+│   │   ├── ledgerRoutes.ts    # Ledger store API routes
+│   │   └── simulationRoutes.ts # Simulation API routes
+│   ├── services/
+│   │   └── simulationService.ts # Contract simulation service
 │   ├── store/
 │   │   └── mockLedgerStore.ts # In-memory ledger state store
 │   ├── types/
-│   │   └── ledger.ts          # Ledger entry type definitions
+│   │   ├── ledger.ts          # Ledger entry type definitions
+│   │   └── simulation.ts      # Simulation type definitions
 │   ├── utils/
 │   │   └── wasmValidator.ts   # WASM file validation utilities
 │   └── index.ts               # Main application entry point
