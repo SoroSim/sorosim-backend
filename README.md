@@ -100,6 +100,17 @@ npm run lint
 - `GET /api/snapshots/export` - Export current ledger state as downloadable JSON file
 - `DELETE /api/snapshots/:filename` - Delete a snapshot file
 
+### Simulation Sessions
+- `POST /api/sessions` - Create a new simulation session
+- `GET /api/sessions` - Get all sessions
+- `GET /api/sessions/active` - Get active sessions
+- `GET /api/sessions/:sessionId` - Get a specific session (add `?includeHistory=true` for invocations)
+- `PUT /api/sessions/:sessionId/status` - Update session status (active/idle/closed)
+- `PUT /api/sessions/:sessionId/metadata` - Update session metadata
+- `DELETE /api/sessions/:sessionId` - Delete a session
+- `GET /api/sessions/:sessionId/invocations` - Get session invocations (add `?limit=10` to limit results)
+- `POST /api/sessions/cleanup` - Clean up inactive sessions
+
 ### Contract Simulation
 - `POST /api/simulate` - Simulate a Soroban contract invocation
   - Content-Type: `application/json`
@@ -328,6 +339,71 @@ Response:
     "entriesLoaded": 10,
     "ledgerSequence": 123,
     "createdAt": "2026-08-27T10:30:00.000Z"
+  }
+}
+```
+
+### Example: Create Simulation Session
+
+```bash
+curl -X POST http://localhost:3000/api/sessions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My Test Session",
+    "description": "Testing contract functions",
+    "networkPassphrase": "Test SDF Network ; September 2015",
+    "tags": ["testing", "development"]
+  }'
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "Session created successfully",
+  "data": {
+    "sessionId": "550e8400-e29b-41d4-a716-446655440000",
+    "createdAt": "2026-08-27T10:30:00.000Z",
+    "lastActivityAt": "2026-08-27T10:30:00.000Z",
+    "status": "active",
+    "networkPassphrase": "Test SDF Network ; September 2015",
+    "metadata": {
+      "name": "My Test Session",
+      "description": "Testing contract functions",
+      "tags": ["testing", "development"]
+    },
+    "invocationCount": 0
+  }
+}
+```
+
+### Example: Get Session with History
+
+```bash
+curl http://localhost:3000/api/sessions/550e8400-e29b-41d4-a716-446655440000?includeHistory=true
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "sessionId": "550e8400-e29b-41d4-a716-446655440000",
+    "createdAt": "2026-08-27T10:30:00.000Z",
+    "lastActivityAt": "2026-08-27T10:35:00.000Z",
+    "status": "active",
+    "invocationCount": 3,
+    "invocations": [
+      {
+        "timestamp": "2026-08-27T10:31:00.000Z",
+        "requestId": "...",
+        "contractId": "CA3D5...",
+        "method": "increment",
+        "args": [],
+        "result": { "success": true, "..." },
+        "duration": 150
+      }
+    ]
   }
 }
 ```
