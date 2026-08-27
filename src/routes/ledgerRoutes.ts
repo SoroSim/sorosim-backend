@@ -2,9 +2,15 @@ import { Router } from 'express';
 import {
   getStats,
   getAllEntries,
+  getEntriesByType,
   getEntry,
+  createOrUpdateEntry,
+  updateEntry,
+  deleteEntry,
   clearStore,
-  getLedgerSeq
+  getLedgerSeq,
+  setLedgerSeq,
+  incrementLedgerSeq
 } from '../controllers/ledgerController';
 
 const router = Router();
@@ -22,10 +28,34 @@ router.get('/stats', getStats);
 router.get('/entries', getAllEntries);
 
 /**
+ * GET /api/ledger/entries/type/:type
+ * Get ledger entries by type
+ */
+router.get('/entries/type/:type', getEntriesByType);
+
+/**
  * GET /api/ledger/entries/:key
  * Get a specific ledger entry by key
  */
 router.get('/entries/:key', getEntry);
+
+/**
+ * POST /api/ledger/entries
+ * Create or update a ledger entry
+ */
+router.post('/entries', createOrUpdateEntry);
+
+/**
+ * PUT /api/ledger/entries/:key
+ * Update an existing ledger entry
+ */
+router.put('/entries/:key', updateEntry);
+
+/**
+ * DELETE /api/ledger/entries/:key
+ * Delete a specific ledger entry
+ */
+router.delete('/entries/:key', deleteEntry);
 
 /**
  * DELETE /api/ledger/clear
@@ -38,5 +68,17 @@ router.delete('/clear', clearStore);
  * Get current ledger sequence number
  */
 router.get('/sequence', getLedgerSeq);
+
+/**
+ * PUT /api/ledger/sequence
+ * Set ledger sequence number
+ */
+router.put('/sequence', setLedgerSeq);
+
+/**
+ * POST /api/ledger/sequence/increment
+ * Increment ledger sequence number
+ */
+router.post('/sequence/increment', incrementLedgerSeq);
 
 export default router;

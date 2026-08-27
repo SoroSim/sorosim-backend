@@ -63,9 +63,15 @@ npm run lint
 ### Mock Ledger Store
 - `GET /api/ledger/stats` - Get ledger store statistics
 - `GET /api/ledger/entries` - Get all ledger entries
+- `GET /api/ledger/entries/type/:type` - Get entries by type (account, contractData, contractCode, etc.)
 - `GET /api/ledger/entries/:key` - Get a specific ledger entry by key
-- `GET /api/ledger/sequence` - Get current ledger sequence number
+- `POST /api/ledger/entries` - Create or update a ledger entry
+- `PUT /api/ledger/entries/:key` - Update an existing ledger entry
+- `DELETE /api/ledger/entries/:key` - Delete a specific ledger entry
 - `DELETE /api/ledger/clear` - Clear all ledger entries
+- `GET /api/ledger/sequence` - Get current ledger sequence number
+- `PUT /api/ledger/sequence` - Set ledger sequence number
+- `POST /api/ledger/sequence/increment` - Increment ledger sequence number
 
 ### Contract Simulation
 - `POST /api/simulate` - Simulate a Soroban contract invocation
@@ -117,6 +123,98 @@ Response:
       "contractData": 3
     }
   }
+}
+```
+
+### Example: Create Ledger Entry
+
+```bash
+curl -X POST http://localhost:3000/api/ledger/entries \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "account",
+    "accountId": "GABC...",
+    "balance": "10000000000",
+    "sequence": "123456",
+    "numSubEntries": 0,
+    "flags": 0,
+    "thresholds": {
+      "low": 1,
+      "medium": 1,
+      "high": 1
+    }
+  }'
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "Ledger entry created/updated successfully",
+  "data": {
+    "type": "account",
+    "key": "account:GABC...",
+    "accountId": "GABC...",
+    "balance": "10000000000",
+    "sequence": "123456",
+    "numSubEntries": 0,
+    "flags": 0,
+    "thresholds": {
+      "low": 1,
+      "medium": 1,
+      "high": 1
+    },
+    "lastModifiedLedgerSeq": 1
+  }
+}
+```
+
+### Example: Update Ledger Entry
+
+```bash
+curl -X PUT http://localhost:3000/api/ledger/entries/account:GABC... \
+  -H "Content-Type: application/json" \
+  -d '{
+    "balance": "20000000000",
+    "sequence": "123457"
+  }'
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "Ledger entry updated successfully",
+  "data": {
+    "type": "account",
+    "key": "account:GABC...",
+    "accountId": "GABC...",
+    "balance": "20000000000",
+    "sequence": "123457",
+    "numSubEntries": 0,
+    "flags": 0,
+    "thresholds": {
+      "low": 1,
+      "medium": 1,
+      "high": 1
+    },
+    "lastModifiedLedgerSeq": 1
+  }
+}
+```
+
+### Example: Delete Ledger Entry
+
+```bash
+curl -X DELETE http://localhost:3000/api/ledger/entries/account:GABC...
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "Ledger entry deleted successfully",
+  "key": "account:GABC..."
 }
 ```
 
