@@ -53,6 +53,15 @@ npm run lint
 - `GET /` - API information
 - `GET /health` - Health check with Soroban RPC connection status
 
+### Network Configuration
+- `GET /api/networks` - Get all available networks (testnet, futurenet, mainnet, custom)
+- `GET /api/networks/default` - Get the default network configuration
+- `GET /api/networks/:id` - Get a specific network by ID
+- `PUT /api/networks/default/:id` - Set the default network
+- `POST /api/networks` - Add or update a custom network
+  - Body: `{ "id": "my-network", "name": "My Network", "rpcUrl": "https://...", "networkPassphrase": "...", "description": "..." }`
+- `DELETE /api/networks/:id` - Delete a custom network (cannot delete predefined networks)
+
 ### WASM Management
 - `POST /api/wasm/upload` - Upload a WASM contract file
   - Content-Type: `multipart/form-data`
@@ -124,6 +133,7 @@ npm run lint
     - `fee` (optional): Transaction fee in stroops
   - Query parameters:
     - `sessionId` (optional): Session ID to log invocation to
+    - `networkId` (optional): Network ID to use for simulation (defaults to configured default network)
   - Returns: Simulation result with events, auth requirements, resource costs, and state diff
 
 ### Example: Upload WASM
@@ -440,6 +450,116 @@ Response:
   "sessionId": "550e8400-e29b-41d4-a716-446655440000"
 }
 ```
+
+### Example: Get All Networks
+
+```bash
+curl http://localhost:3000/api/networks
+```
+
+Response:
+```json
+{
+  "success": true,
+  "count": 3,
+  "data": [
+    {
+      "id": "testnet",
+      "name": "Stellar Testnet",
+      "type": "testnet",
+      "rpcUrl": "https://soroban-testnet.stellar.org",
+      "networkPassphrase": "Test SDF Network ; September 2015",
+      "description": "Official Stellar testnet for development and testing",
+      "isDefault": true
+    },
+    {
+      "id": "futurenet",
+      "name": "Stellar Futurenet",
+      "type": "futurenet",
+      "rpcUrl": "https://rpc-futurenet.stellar.org",
+      "networkPassphrase": "Test SDF Future Network ; October 2022",
+      "description": "Experimental network for testing upcoming features"
+    },
+    {
+      "id": "mainnet",
+      "name": "Stellar Mainnet",
+      "type": "mainnet",
+      "rpcUrl": "https://mainnet.stellar.validationcloud.io/v1",
+      "networkPassphrase": "Public Global Stellar Network ; September 2015",
+      "description": "Production Stellar mainnet - use with caution"
+    }
+  ]
+}
+```
+
+### Example: Add Custom Network
+
+```bash
+curl -X POST http://localhost:3000/api/networks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "local-dev",
+    "name": "Local Development",
+    "rpcUrl": "http://localhost:8000/soroban/rpc",
+    "networkPassphrase": "Standalone Network ; February 2017",
+    "description": "Local Stellar quickstart instance for development"
+  }'
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "Network added successfully",
+  "data": {
+    "id": "local-dev",
+    "name": "Local Development",
+    "type": "custom",
+    "rpcUrl": "http://localhost:8000/soroban/rpc",
+    "networkPassphrase": "Standalone Network ; February 2017",
+    "description": "Local Stellar quickstart instance for development",
+    "isDefault": false
+  }
+}
+```
+
+### Example: Set Default Network
+
+```bash
+curl -X PUT http://localhost:3000/api/networks/default/futurenet
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "Default network updated successfully",
+  "data": {
+    "id": "futurenet",
+    "name": "Stellar Futurenet",
+    "type": "futurenet",
+    "rpcUrl": "https://rpc-futurenet.stellar.org",
+    "networkPassphrase": "Test SDF Future Network ; October 2022",
+    "description": "Experimental network for testing upcoming features",
+    "isDefault": true
+  }
+}
+```
+
+### Example: Simulate with Specific Network
+
+```bash
+curl -X POST "http://localhost:3000/api/simulate?networkId=futurenet" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "contractId": "CA3D5KRYM6CB7OWQ6TWYRR3Z4T7GNZLKERYNZGGA5SOAOPIFY6YQGAXE",
+    "method": "increment",
+    "args": []
+  }'
+```
+
+Response: (same as regular simulate, but uses futurenet network)
+
 
 ### Example: Get Session Statistics
 

@@ -3,21 +3,26 @@ import { SorobanClient } from '../engine/sorobanClient';
 import { SimulationService } from '../services/simulationService';
 import { SimulationRequest, SimulationResponse } from '../types/simulation';
 import { getSessionStore } from '../store/sessionStore';
+import { getNetworkStore } from '../store/networkStore';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Simulation controller
  */
 
-// Create singleton simulation service
-let simulationService: SimulationService | null = null;
+/**
+ * Get simulation service with network configuration
+ */
+function getSimulationService(networkId?: string): SimulationService {
+  const networkStore = getNetworkStore();
+  
+  // Get network config - use provided networkId or default
+  const network = networkId 
+    ? networkStore.getNetwork(networkId) || networkStore.getDefaultNetwork()
+    : networkStore.getDefaultNetwork();
 
-function getSimulationService(): SimulationService {
-  if (!simulationService) {
-    const sorobanClient = new SorobanClient();
-    simulationService = new SimulationService(sorobanClient);
-  }
-  return simulationService;
+  const sorobanClient = SorobanClient.fromNetworkConfig(network);
+  return new SimulationService(sorobanClient);
 }
 
 /**
@@ -28,7 +33,7 @@ export const simulateInvocation = async (req: Request, res: Response): Promise<v
   
   try {
     const requestBody = req.body as SimulationRequest;
-    const { sessionId } = req.query; // Optional session ID
+    const { sessionId, networkId } = req.query; // Optional session ID and network ID
 
     // Validate request
     if (!requestBody.contractId) {
@@ -49,12 +54,25 @@ export const simulateInvocation = async (req: Request, res: Response): Promise<v
       return;
     }
 
+    // Validate network if provided
+    if (networkId && typeof networkId === 'string') {
+      const networkStore = getNetworkStore();
+      if (!networkStore.hasNetwork(networkId)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid network ID',
+          error: `Network with ID '${networkId}' not found`
+        } as SimulationResponse);
+        return;
+      }
+    }
+
     // Generate request ID for tracking
     const requestId = uuidv4();
     const timestamp = new Date().toISOString();
 
-    // Execute simulation
-    const service = getSimulationService();
+    // Execute simulation with specified or default network
+    const service = getSimulationService(networkId as string | undefined);
     const result = await service.simulateInvocation(requestBody);
 
     // Add state diff if simulation was successful

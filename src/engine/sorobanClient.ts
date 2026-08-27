@@ -1,4 +1,5 @@
 import { rpc, TransactionBuilder, Networks, Contract, xdr } from '@stellar/stellar-sdk';
+import { NetworkConfig } from '../types/network';
 
 /**
  * Soroban RPC client wrapper for contract simulation
@@ -12,6 +13,13 @@ export class SorobanClient {
       rpcUrl || process.env.SOROBAN_RPC_URL || 'https://soroban-testnet.stellar.org'
     );
     this.networkPassphrase = networkPassphrase || Networks.TESTNET;
+  }
+
+  /**
+   * Create client from network configuration
+   */
+  static fromNetworkConfig(network: NetworkConfig): SorobanClient {
+    return new SorobanClient(network.rpcUrl, network.networkPassphrase);
   }
 
   /**

@@ -10,6 +10,7 @@ import accountRoutes from './routes/accountRoutes';
 import contractRoutes from './routes/contractRoutes';
 import snapshotRoutes from './routes/snapshotRoutes';
 import sessionRoutes from './routes/sessionRoutes';
+import networkRoutes from './routes/networkRoutes';
 
 dotenv.config();
 
@@ -32,6 +33,7 @@ app.use('/api/accounts', accountRoutes);
 app.use('/api/contracts', contractRoutes);
 app.use('/api/snapshots', snapshotRoutes);
 app.use('/api/sessions', sessionRoutes);
+app.use('/api/networks', networkRoutes);
 
 // Error handling middleware
 app.use((err: Error, _req: Request, res: Response, _next: express.NextFunction) => {
