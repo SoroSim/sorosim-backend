@@ -1,7 +1,9 @@
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import multer from 'multer';
 import { SorobanClient } from './engine';
+import wasmRoutes from './routes/wasmRoutes';
 
 dotenv.config();
 
@@ -15,6 +17,53 @@ const sorobanClient = new SorobanClient();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Routes
+app.use('/api/wasm', wasmRoutes);
+
+// Error handling middleware
+app.use((err: Error, _req: Request, res: Response, _next: express.NextFunction) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      res.status(400).json({
+        success: false,
+        message: 'File too large',
+        error: 'WASM file must not exceed 10 MB'
+      });
+      return;
+    }
+    if (err.code === 'LIMIT_FILE_COUNT') {
+      res.status(400).json({
+        success: false,
+        message: 'Too many files',
+        error: 'Only one WASM file can be uploaded at a time'
+      });
+      return;
+    }
+    res.status(400).json({
+      success: false,
+      message: 'File upload error',
+      error: err.message
+    });
+    return;
+  }
+
+  if (err.message === 'Only .wasm files are allowed') {
+    res.status(400).json({
+      success: false,
+      message: 'Invalid file type',
+      error: err.message
+    });
+    return;
+  }
+
+  console.error('Unhandled error:', err);
+  res.status(500).json({
+    success: false,
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? err.message : 'An unexpected error occurred'
+  });
+});
 
 // Health check endpoint
 app.get('/health', async (_req: Request, res: Response) => {

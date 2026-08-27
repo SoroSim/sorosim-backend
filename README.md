@@ -49,16 +49,56 @@ npm run lint
 
 ## API Endpoints
 
+### General
 - `GET /` - API information
-- `GET /health` - Health check
+- `GET /health` - Health check with Soroban RPC connection status
+
+### WASM Management
+- `POST /api/wasm/upload` - Upload a WASM contract file
+  - Content-Type: `multipart/form-data`
+  - Field name: `wasm`
+  - Accepts: `.wasm` files (max 10 MB)
+  - Returns: File metadata including SHA-256 hash
+
+### Example: Upload WASM
+
+```bash
+curl -X POST http://localhost:3000/api/wasm/upload \
+  -F "wasm=@/path/to/contract.wasm"
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "WASM file uploaded successfully",
+  "data": {
+    "filename": "contract.wasm",
+    "size": 45678,
+    "hash": "a1b2c3d4...",
+    "uploadedAt": "2026-08-27T10:30:00.000Z"
+  }
+}
+```
 
 ## Project Structure
 
 ```
 sorosim-backend/
 ├── src/
-│   └── index.ts       # Main application entry point
-├── dist/              # Compiled JavaScript (generated)
+│   ├── config/
+│   │   └── multer.ts          # Multer configuration for file uploads
+│   ├── controllers/
+│   │   └── wasmController.ts  # WASM upload controller
+│   ├── engine/
+│   │   ├── sorobanClient.ts   # Soroban RPC client wrapper
+│   │   └── index.ts           # Engine exports
+│   ├── routes/
+│   │   └── wasmRoutes.ts      # WASM API routes
+│   ├── utils/
+│   │   └── wasmValidator.ts   # WASM file validation utilities
+│   └── index.ts               # Main application entry point
+├── dist/                      # Compiled JavaScript (generated)
 ├── package.json
 ├── tsconfig.json
 └── README.md
