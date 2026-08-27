@@ -87,6 +87,15 @@ npm run lint
 - `POST /api/contracts/code` - Create or update contract code entry
 - `POST /api/contracts/code/defaults` - Create contract code with defaults
 
+### Ledger Snapshots
+- `GET /api/snapshots` - List all available snapshot files
+- `POST /api/snapshots/create` - Create a snapshot of current ledger state (returns JSON)
+- `POST /api/snapshots/save` - Save current ledger state to file
+- `POST /api/snapshots/load` - Load snapshot from file
+- `POST /api/snapshots/import` - Load snapshot from JSON body
+- `GET /api/snapshots/export` - Export current ledger state as downloadable JSON file
+- `DELETE /api/snapshots/:filename` - Delete a snapshot file
+
 ### Contract Simulation
 - `POST /api/simulate` - Simulate a Soroban contract invocation
   - Content-Type: `application/json`
@@ -229,6 +238,59 @@ Response:
   "success": true,
   "message": "Ledger entry deleted successfully",
   "key": "account:GABC..."
+}
+```
+
+### Example: Save Ledger Snapshot
+
+```bash
+curl -X POST http://localhost:3000/api/snapshots/save \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filename": "my-snapshot.json",
+    "networkPassphrase": "Test SDF Network ; September 2015"
+  }'
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "Snapshot saved to file successfully",
+  "data": {
+    "filePath": "/path/to/snapshots/my-snapshot.json",
+    "snapshot": {
+      "version": "1.0",
+      "createdAt": "2026-08-27T10:30:00.000Z",
+      "ledgerSequence": 123,
+      "networkPassphrase": "Test SDF Network ; September 2015",
+      "entries": [...]
+    }
+  }
+}
+```
+
+### Example: Load Ledger Snapshot
+
+```bash
+curl -X POST http://localhost:3000/api/snapshots/load \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filename": "my-snapshot.json",
+    "clearExisting": true
+  }'
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "Snapshot loaded successfully",
+  "data": {
+    "entriesLoaded": 10,
+    "ledgerSequence": 123,
+    "createdAt": "2026-08-27T10:30:00.000Z"
+  }
 }
 ```
 
