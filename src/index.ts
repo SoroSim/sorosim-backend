@@ -6,6 +6,8 @@ import { SorobanClient } from './engine';
 import wasmRoutes from './routes/wasmRoutes';
 import ledgerRoutes from './routes/ledgerRoutes';
 import simulationRoutes from './routes/simulationRoutes';
+import accountRoutes from './routes/accountRoutes';
+import contractRoutes from './routes/contractRoutes';
 
 dotenv.config();
 
@@ -24,6 +26,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/wasm', wasmRoutes);
 app.use('/api/ledger', ledgerRoutes);
 app.use('/api/simulate', simulationRoutes);
+app.use('/api/accounts', accountRoutes);
+app.use('/api/contracts', contractRoutes);
 
 // Error handling middleware
 app.use((err: Error, _req: Request, res: Response, _next: express.NextFunction) => {

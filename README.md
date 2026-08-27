@@ -73,6 +73,20 @@ npm run lint
 - `PUT /api/ledger/sequence` - Set ledger sequence number
 - `POST /api/ledger/sequence/increment` - Increment ledger sequence number
 
+### Account Entries
+- `GET /api/accounts` - Get all account entries
+- `GET /api/accounts/:accountId` - Get account by ID
+- `POST /api/accounts` - Create or update an account entry
+- `POST /api/accounts/defaults` - Create account with default values
+
+### Contract Entries
+- `GET /api/contracts/data` - Get all contract data entries
+- `POST /api/contracts/data` - Create or update contract data entry
+- `POST /api/contracts/data/defaults` - Create contract data with defaults
+- `GET /api/contracts/code` - Get all contract code entries
+- `POST /api/contracts/code` - Create or update contract code entry
+- `POST /api/contracts/code/defaults` - Create contract code with defaults
+
 ### Contract Simulation
 - `POST /api/simulate` - Simulate a Soroban contract invocation
   - Content-Type: `application/json`

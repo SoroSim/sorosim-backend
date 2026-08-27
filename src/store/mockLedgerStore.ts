@@ -200,7 +200,7 @@ export class MockLedgerStore {
       case LedgerEntryType.ACCOUNT:
         return `${entry.type}:${(entry as AccountEntry).accountId}`;
       case LedgerEntryType.CONTRACT_DATA:
-        return `${entry.type}:${(entry as ContractDataEntry).contract}:${(entry as ContractDataEntry).key}`;
+        return `${entry.type}:${(entry as ContractDataEntry).contract}:${(entry as ContractDataEntry).storageKey}`;
       case LedgerEntryType.CONTRACT_CODE:
         return `${entry.type}:${(entry as ContractCodeEntry).hash}`;
       case LedgerEntryType.TRUSTLINE:

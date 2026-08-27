@@ -56,7 +56,7 @@ export interface AccountEntry extends BaseLedgerEntry {
 export interface ContractDataEntry extends BaseLedgerEntry {
   type: LedgerEntryType.CONTRACT_DATA;
   contract: string; // Contract address
-  key: string; // Storage key
+  storageKey: string; // Storage key within the contract
   durability: 'temporary' | 'persistent';
   val: unknown; // ScVal value (can be complex)
 }

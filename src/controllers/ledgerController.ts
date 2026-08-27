@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { getMockLedgerStore } from '../store/mockLedgerStore';
 import { LedgerEntry, LedgerEntryType } from '../types/ledger';
+import { validateLedgerEntry } from '../utils/ledgerValidation';
 
 /**
  * Ledger store management controller
@@ -137,6 +138,17 @@ export const createOrUpdateEntry = (req: Request, res: Response): void => {
         success: false,
         message: 'Invalid ledger entry type',
         error: `Type must be one of: ${Object.values(LedgerEntryType).join(', ')}`
+      });
+      return;
+    }
+
+    // Validate entry based on type
+    const validation = validateLedgerEntry(entry);
+    if (!validation.valid) {
+      res.status(400).json({
+        success: false,
+        message: 'Ledger entry validation failed',
+        errors: validation.errors
       });
       return;
     }
