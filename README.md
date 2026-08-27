@@ -60,6 +60,13 @@ npm run lint
   - Accepts: `.wasm` files (max 10 MB)
   - Returns: File metadata including SHA-256 hash
 
+### Mock Ledger Store
+- `GET /api/ledger/stats` - Get ledger store statistics
+- `GET /api/ledger/entries` - Get all ledger entries
+- `GET /api/ledger/entries/:key` - Get a specific ledger entry by key
+- `GET /api/ledger/sequence` - Get current ledger sequence number
+- `DELETE /api/ledger/clear` - Clear all ledger entries
+
 ### Example: Upload WASM
 
 ```bash
@@ -81,6 +88,27 @@ Response:
 }
 ```
 
+### Example: Get Ledger Stats
+
+```bash
+curl http://localhost:3000/api/ledger/stats
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "totalEntries": 5,
+    "currentLedgerSeq": 1,
+    "entriesByType": {
+      "account": 2,
+      "contractData": 3
+    }
+  }
+}
+```
+
 ## Project Structure
 
 ```
@@ -89,12 +117,18 @@ sorosim-backend/
 │   ├── config/
 │   │   └── multer.ts          # Multer configuration for file uploads
 │   ├── controllers/
-│   │   └── wasmController.ts  # WASM upload controller
+│   │   ├── wasmController.ts  # WASM upload controller
+│   │   └── ledgerController.ts # Ledger store controller
 │   ├── engine/
 │   │   ├── sorobanClient.ts   # Soroban RPC client wrapper
 │   │   └── index.ts           # Engine exports
 │   ├── routes/
-│   │   └── wasmRoutes.ts      # WASM API routes
+│   │   ├── wasmRoutes.ts      # WASM API routes
+│   │   └── ledgerRoutes.ts    # Ledger store API routes
+│   ├── store/
+│   │   └── mockLedgerStore.ts # In-memory ledger state store
+│   ├── types/
+│   │   └── ledger.ts          # Ledger entry type definitions
 │   ├── utils/
 │   │   └── wasmValidator.ts   # WASM file validation utilities
 │   └── index.ts               # Main application entry point

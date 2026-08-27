@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import multer from 'multer';
 import { SorobanClient } from './engine';
 import wasmRoutes from './routes/wasmRoutes';
+import ledgerRoutes from './routes/ledgerRoutes';
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/wasm', wasmRoutes);
+app.use('/api/ledger', ledgerRoutes);
 
 // Error handling middleware
 app.use((err: Error, _req: Request, res: Response, _next: express.NextFunction) => {
