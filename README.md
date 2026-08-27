@@ -4,6 +4,7 @@ Soroban Contract Simulation & Dry-Run Sandbox Backend - A REST API for simulatin
 
 ## Features
 
+- **Stellar SDK Integration**: Full integration with @stellar/stellar-sdk for Soroban contract simulation
 - Simulate Soroban contract invocations without testnet
 - Mock ledger state management
 - Visual state inspection and diff tracking
