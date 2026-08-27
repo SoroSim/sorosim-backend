@@ -62,6 +62,14 @@ npm run lint
   - Body: `{ "id": "my-network", "name": "My Network", "rpcUrl": "https://...", "networkPassphrase": "...", "description": "..." }`
 - `DELETE /api/networks/:id` - Delete a custom network (cannot delete predefined networks)
 
+### State Diff Calculator
+- `GET /api/diff/snapshot` - Capture current ledger state snapshot
+- `POST /api/diff/calculate` - Calculate diff between two ledger snapshots
+  - Body: `{ "before": <snapshot>, "after": <snapshot> }`
+- `POST /api/diff/from-snapshot` - Calculate diff from a snapshot to current state
+  - Body: `{ "snapshot": <snapshot> }`
+- `GET /api/diff/before` - Helper endpoint to start before/after diff workflow
+
 ### WASM Management
 - `POST /api/wasm/upload` - Upload a WASM contract file
   - Content-Type: `multipart/form-data`
@@ -559,6 +567,140 @@ curl -X POST "http://localhost:3000/api/simulate?networkId=futurenet" \
 ```
 
 Response: (same as regular simulate, but uses futurenet network)
+
+### Example: Capture Ledger Snapshot
+
+```bash
+curl http://localhost:3000/api/diff/snapshot
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "Ledger snapshot captured successfully",
+  "data": {
+    "timestamp": "2026-08-27T10:30:00.000Z",
+    "ledgerSequence": 123,
+    "entries": [
+      {
+        "key": "account:GABC...",
+        "type": "account",
+        "accountId": "GABC...",
+        "balance": "10000000000",
+        "sequence": "123456"
+      },
+      {
+        "key": "contractData:CA3D5...:counter",
+        "type": "contractData",
+        "contract": "CA3D5...",
+        "storageKey": "counter",
+        "value": "42"
+      }
+    ]
+  }
+}
+```
+
+### Example: Calculate Before/After Diff
+
+```bash
+# Step 1: Capture before snapshot
+BEFORE=$(curl -s http://localhost:3000/api/diff/snapshot | jq '.data')
+
+# Step 2: Make changes to ledger (e.g., update account balance)
+curl -X PUT http://localhost:3000/api/ledger/entries/account:GABC... \
+  -H "Content-Type: application/json" \
+  -d '{ "balance": "20000000000" }'
+
+# Step 3: Capture after snapshot
+AFTER=$(curl -s http://localhost:3000/api/diff/snapshot | jq '.data')
+
+# Step 4: Calculate diff
+curl -X POST http://localhost:3000/api/diff/calculate \
+  -H "Content-Type: application/json" \
+  -d "{\"before\": $BEFORE, \"after\": $AFTER}"
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "Diff calculated successfully",
+  "data": {
+    "before": {
+      "timestamp": "2026-08-27T10:30:00.000Z",
+      "ledgerSequence": 123,
+      "entryCount": 2
+    },
+    "after": {
+      "timestamp": "2026-08-27T10:31:00.000Z",
+      "ledgerSequence": 123,
+      "entryCount": 2
+    },
+    "diff": {
+      "ledgerEntryChanges": [
+        {
+          "key": "account:GABC...",
+          "type": "account",
+          "changeType": "updated",
+          "before": {
+            "balance": "10000000000",
+            "sequence": "123456"
+          },
+          "after": {
+            "balance": "20000000000",
+            "sequence": "123456"
+          },
+          "diff": {
+            "balance": {
+              "before": "10000000000",
+              "after": "20000000000"
+            }
+          }
+        }
+      ],
+      "storageChanges": [],
+      "balanceChanges": [
+        {
+          "accountId": "GABC...",
+          "assetType": "native",
+          "changeType": "updated",
+          "before": "10000000000",
+          "after": "20000000000",
+          "delta": "10000000000"
+        }
+      ],
+      "events": [],
+      "summary": {
+        "totalChanges": 1,
+        "entriesCreated": 0,
+        "entriesUpdated": 1,
+        "entriesDeleted": 0,
+        "eventsEmitted": 0
+      }
+    }
+  }
+}
+```
+
+### Example: Diff from Snapshot to Current
+
+```bash
+# Capture a snapshot
+SNAPSHOT=$(curl -s http://localhost:3000/api/diff/snapshot | jq '.data')
+
+# Make some changes...
+curl -X POST http://localhost:3000/api/accounts/defaults
+
+# Calculate diff from snapshot to current state
+curl -X POST http://localhost:3000/api/diff/from-snapshot \
+  -H "Content-Type: application/json" \
+  -d "{\"snapshot\": $SNAPSHOT}"
+```
+
+Response: (similar to calculate endpoint, comparing provided snapshot to current state)
+
 
 
 ### Example: Get Session Statistics

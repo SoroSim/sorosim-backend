@@ -63,6 +63,19 @@ export interface ContractEvent {
 }
 
 /**
+ * Ledger snapshot for before/after comparison
+ */
+export interface LedgerSnapshot {
+  timestamp: string;
+  ledgerSequence: number;
+  entries: Array<{
+    key: string;
+    type: string;
+    [key: string]: unknown;
+  }>; // Array of LedgerEntry objects with at least key and type
+}
+
+/**
  * Structured state diff result
  */
 export interface StateDiff {

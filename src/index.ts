@@ -11,6 +11,7 @@ import contractRoutes from './routes/contractRoutes';
 import snapshotRoutes from './routes/snapshotRoutes';
 import sessionRoutes from './routes/sessionRoutes';
 import networkRoutes from './routes/networkRoutes';
+import diffRoutes from './routes/diffRoutes';
 
 dotenv.config();
 
@@ -34,6 +35,7 @@ app.use('/api/contracts', contractRoutes);
 app.use('/api/snapshots', snapshotRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/networks', networkRoutes);
+app.use('/api/diff', diffRoutes);
 
 // Error handling middleware
 app.use((err: Error, _req: Request, res: Response, _next: express.NextFunction) => {
