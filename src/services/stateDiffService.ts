@@ -10,6 +10,7 @@ import {
 } from '../types/stateDiff';
 import { SimulationResult } from '../types/simulation';
 import { getMockLedgerStore } from '../store/mockLedgerStore';
+import { EventExtractor } from './eventExtractor';
 
 /**
  * Simplified entry type for snapshots
@@ -24,6 +25,11 @@ type SnapshotEntry = {
  * Service for parsing simulation results into structured state diffs
  */
 export class StateDiffService {
+  private eventExtractor: EventExtractor;
+
+  constructor() {
+    this.eventExtractor = new EventExtractor();
+  }
   /**
    * Calculate before/after diff for ledger state changes
    * 
@@ -255,7 +261,9 @@ export class StateDiffService {
   parseSimulationResult(simulationResult: SimulationResult): StateDiff {
     const ledgerEntryChanges: LedgerEntryChange[] = [];
     const storageChanges: StorageChange[] = [];
-    const events: ContractEvent[] = this.parseEvents(simulationResult.events || []);
+    
+    // Extract and parse events using EventExtractor
+    const events: ContractEvent[] = this.eventExtractor.extractEvents(simulationResult.events || []);
 
     // Parse footprint to identify changed entries
     if (simulationResult.transactionData) {
@@ -299,53 +307,12 @@ export class StateDiffService {
   }
 
   /**
-   * Parse contract events from simulation
+   * Get event extractor instance for advanced event operations
    * 
-   * @param events - Raw events from simulation
-   * @returns Parsed contract events
+   * @returns Event extractor
    */
-  private parseEvents(events: unknown[]): ContractEvent[] {
-    if (!Array.isArray(events)) {
-      return [];
-    }
-
-    return events.map((event, index) => {
-      try {
-        // If already parsed object
-        if (typeof event === 'object' && event !== null) {
-          return this.parseEventObject(event as Record<string, unknown>);
-        }
-
-        // Fallback
-        return {
-          type: 'unknown',
-          topics: [],
-          data: event
-        };
-      } catch (error) {
-        console.error(`Failed to parse event ${index}:`, error);
-        return {
-          type: 'parse_error',
-          topics: [],
-          data: event
-        };
-      }
-    });
-  }
-
-  /**
-   * Parse event object
-   * 
-   * @param event - Event object
-   * @returns Parsed contract event
-   */
-  private parseEventObject(event: Record<string, unknown>): ContractEvent {
-    return {
-      type: (event.type as string) || 'unknown',
-      contractId: event.contractId as string | undefined,
-      topics: Array.isArray(event.topics) ? event.topics : [],
-      data: event.data || event
-    };
+  getEventExtractor(): EventExtractor {
+    return this.eventExtractor;
   }
 
   /**

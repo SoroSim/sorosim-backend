@@ -70,6 +70,18 @@ npm run lint
   - Body: `{ "snapshot": <snapshot> }`
 - `GET /api/diff/before` - Helper endpoint to start before/after diff workflow
 
+### Event Extraction
+- `POST /api/events/extract` - Extract and parse contract events from raw simulation events
+  - Body: `{ "events": [ ... ] }`
+- `POST /api/events/stats` - Get event statistics (count by type, by contract)
+  - Body: `{ "events": [ ... ] }`
+- `POST /api/events/filter/type` - Filter events by type (contract, system, diagnostic, unknown)
+  - Body: `{ "events": [ ... ], "type": "contract" }`
+- `POST /api/events/filter/contract` - Filter events by contract ID
+  - Body: `{ "events": [ ... ], "contractId": "CA3D5..." }`
+- `POST /api/events/group` - Group events by contract ID
+  - Body: `{ "events": [ ... ] }`
+
 ### WASM Management
 - `POST /api/wasm/upload` - Upload a WASM contract file
   - Content-Type: `multipart/form-data`
@@ -700,6 +712,130 @@ curl -X POST http://localhost:3000/api/diff/from-snapshot \
 ```
 
 Response: (similar to calculate endpoint, comparing provided snapshot to current state)
+
+### Example: Extract Events from Simulation
+
+```bash
+# Extract and parse events from a simulation result
+curl -X POST http://localhost:3000/api/events/extract \
+  -H "Content-Type: application/json" \
+  -d '{
+    "events": [
+      {
+        "type": "contract",
+        "contractId": "CA3D5KRYM6CB7OWQ6TWYRR3Z4T7GNZLKERYNZGGA5SOAOPIFY6YQGAXE",
+        "topics": ["increment"],
+        "data": { "counter": 42 }
+      }
+    ]
+  }'
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "Events extracted successfully",
+  "data": {
+    "events": [
+      {
+        "index": 0,
+        "type": "contract",
+        "contractId": "CA3D5KRYM6CB7OWQ6TWYRR3Z4T7GNZLKERYNZGGA5SOAOPIFY6YQGAXE",
+        "topics": ["increment"],
+        "data": { "counter": 42 },
+        "raw": { ... }
+      }
+    ],
+    "count": 1
+  }
+}
+```
+
+### Example: Get Event Statistics
+
+```bash
+curl -X POST http://localhost:3000/api/events/stats \
+  -H "Content-Type: application/json" \
+  -d '{
+    "events": [...]
+  }'
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "Event statistics calculated successfully",
+  "data": {
+    "total": 5,
+    "byType": {
+      "contract": 4,
+      "system": 1
+    },
+    "byContract": {
+      "CA3D5...": 3,
+      "CB4E6...": 2
+    }
+  }
+}
+```
+
+### Example: Filter Events by Type
+
+```bash
+curl -X POST http://localhost:3000/api/events/filter/type \
+  -H "Content-Type: application/json" \
+  -d '{
+    "events": [...],
+    "type": "contract"
+  }'
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "Events filtered by type: CONTRACT",
+  "data": {
+    "events": [...],
+    "count": 4,
+    "originalCount": 5
+  }
+}
+```
+
+### Example: Group Events by Contract
+
+```bash
+curl -X POST http://localhost:3000/api/events/group \
+  -H "Content-Type: application/json" \
+  -d '{
+    "events": [...]
+  }'
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "Events grouped by contract successfully",
+  "data": {
+    "groups": {
+      "CA3D5KRYM6CB7OWQ6TWYRR3Z4T7GNZLKERYNZGGA5SOAOPIFY6YQGAXE": [
+        { "index": 0, "type": "contract", ... },
+        { "index": 2, "type": "contract", ... }
+      ],
+      "CB4E6...": [
+        { "index": 1, "type": "contract", ... }
+      ]
+    },
+    "contractCount": 2,
+    "totalEvents": 3
+  }
+}
+```
+
 
 
 

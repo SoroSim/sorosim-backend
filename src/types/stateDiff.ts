@@ -13,6 +13,16 @@ export enum StateChangeType {
 }
 
 /**
+ * Type of contract event
+ */
+export enum EventType {
+  CONTRACT = 'contract',
+  SYSTEM = 'system',
+  DIAGNOSTIC = 'diagnostic',
+  UNKNOWN = 'unknown'
+}
+
+/**
  * Individual ledger entry change
  */
 export interface LedgerEntryChange {
@@ -56,10 +66,12 @@ export interface BalanceChange {
  * Contract event from simulation
  */
 export interface ContractEvent {
-  type: string;
+  index: number; // Event index in sequence
+  type: EventType;
   contractId?: string;
   topics: unknown[];
   data: unknown;
+  raw?: unknown; // Raw event data for debugging
 }
 
 /**
