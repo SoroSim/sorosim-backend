@@ -50,4 +50,6 @@ export interface SimulationResponse {
   error?: string;
   requestId?: string;
   timestamp?: string;
+  duration?: number; // Duration in milliseconds
+  sessionId?: string; // Session ID if logged to session
 }

@@ -8,7 +8,9 @@ import {
   updateSessionMetadata,
   deleteSession,
   getSessionInvocations,
-  cleanupSessions
+  cleanupSessions,
+  exportSessionHistory,
+  getSessionStats
 } from '../controllers/sessionController';
 
 const router = Router();
@@ -37,6 +39,18 @@ router.get('/active', getActiveSessions);
  * Query params: includeHistory=true to include invocation history
  */
 router.get('/:sessionId', getSession);
+
+/**
+ * GET /api/sessions/:sessionId/stats
+ * Get session statistics
+ */
+router.get('/:sessionId/stats', getSessionStats);
+
+/**
+ * GET /api/sessions/:sessionId/export
+ * Export session history as downloadable JSON
+ */
+router.get('/:sessionId/export', exportSessionHistory);
 
 /**
  * PUT /api/sessions/:sessionId/status

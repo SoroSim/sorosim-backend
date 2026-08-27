@@ -105,6 +105,8 @@ npm run lint
 - `GET /api/sessions` - Get all sessions
 - `GET /api/sessions/active` - Get active sessions
 - `GET /api/sessions/:sessionId` - Get a specific session (add `?includeHistory=true` for invocations)
+- `GET /api/sessions/:sessionId/stats` - Get session statistics (invocation counts, success rates, etc.)
+- `GET /api/sessions/:sessionId/export` - Export session history as downloadable JSON file
 - `PUT /api/sessions/:sessionId/status` - Update session status (active/idle/closed)
 - `PUT /api/sessions/:sessionId/metadata` - Update session metadata
 - `DELETE /api/sessions/:sessionId` - Delete a session
@@ -120,7 +122,9 @@ npm run lint
     - `args` (optional): Array of function arguments
     - `source` (optional): Source account public key
     - `fee` (optional): Transaction fee in stroops
-  - Returns: Simulation result with events, auth requirements, and resource costs
+  - Query parameters:
+    - `sessionId` (optional): Session ID to log invocation to
+  - Returns: Simulation result with events, auth requirements, resource costs, and state diff
 
 ### Example: Upload WASM
 
@@ -404,6 +408,59 @@ Response:
         "duration": 150
       }
     ]
+  }
+}
+```
+
+### Example: Simulate with Session Logging
+
+```bash
+curl -X POST "http://localhost:3000/api/simulate?sessionId=550e8400-e29b-41d4-a716-446655440000" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "contractId": "CA3D5KRYM6CB7OWQ6TWYRR3Z4T7GNZLKERYNZGGA5SOAOPIFY6YQGAXE",
+    "method": "increment",
+    "args": []
+  }'
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "Simulation completed successfully",
+  "data": {
+    "success": true,
+    "result": "...",
+    "stateDiff": { "..." }
+  },
+  "requestId": "abc-123",
+  "timestamp": "2026-08-27T10:31:00.000Z",
+  "duration": 150,
+  "sessionId": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+### Example: Get Session Statistics
+
+```bash
+curl http://localhost:3000/api/sessions/550e8400-e29b-41d4-a716-446655440000/stats
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "sessionId": "550e8400-e29b-41d4-a716-446655440000",
+    "totalInvocations": 25,
+    "successfulInvocations": 23,
+    "failedInvocations": 2,
+    "averageDuration": 145.6,
+    "uniqueContracts": 3,
+    "uniqueMethods": 5,
+    "firstInvocation": "2026-08-27T10:30:00.000Z",
+    "lastInvocation": "2026-08-27T10:45:00.000Z"
   }
 }
 ```

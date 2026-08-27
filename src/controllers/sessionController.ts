@@ -297,3 +297,86 @@ export const cleanupSessions = (req: Request, res: Response): void => {
     });
   }
 };
+
+/**
+ * Export session history as JSON
+ */
+export const exportSessionHistory = (req: Request, res: Response): void => {
+  try {
+    const { sessionId } = req.params;
+    
+    const store = getSessionStore();
+    const session = store.getSessionWithHistory(sessionId);
+    
+    if (!session) {
+      res.status(404).json({
+        success: false,
+        message: 'Session not found',
+        sessionId
+      });
+      return;
+    }
+    
+    // Set headers for file download
+    const filename = `session-${sessionId}-${Date.now()}.json`;
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    
+    res.status(200).send(JSON.stringify(session, null, 2));
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to export session history',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+/**
+ * Get session statistics
+ */
+export const getSessionStats = (req: Request, res: Response): void => {
+  try {
+    const { sessionId } = req.params;
+    
+    const store = getSessionStore();
+    const session = store.getSession(sessionId);
+    
+    if (!session) {
+      res.status(404).json({
+        success: false,
+        message: 'Session not found',
+        sessionId
+      });
+      return;
+    }
+    
+    const invocations = store.getInvocations(sessionId);
+    
+    // Calculate statistics
+    const stats = {
+      sessionId: session.sessionId,
+      totalInvocations: invocations.length,
+      successfulInvocations: invocations.filter(inv => inv.result.success).length,
+      failedInvocations: invocations.filter(inv => !inv.result.success).length,
+      averageDuration: invocations.length > 0
+        ? invocations.reduce((sum, inv) => sum + (inv.duration || 0), 0) / invocations.length
+        : 0,
+      uniqueContracts: new Set(invocations.map(inv => inv.contractId)).size,
+      uniqueMethods: new Set(invocations.map(inv => inv.method)).size,
+      firstInvocation: invocations.length > 0 ? invocations[0].timestamp : null,
+      lastInvocation: invocations.length > 0 ? invocations[invocations.length - 1].timestamp : null
+    };
+    
+    res.status(200).json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get session statistics',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};

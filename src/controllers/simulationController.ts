@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { SorobanClient } from '../engine/sorobanClient';
 import { SimulationService } from '../services/simulationService';
 import { SimulationRequest, SimulationResponse } from '../types/simulation';
+import { getSessionStore } from '../store/sessionStore';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -23,8 +24,11 @@ function getSimulationService(): SimulationService {
  * Simulate a contract invocation
  */
 export const simulateInvocation = async (req: Request, res: Response): Promise<void> => {
+  const startTime = Date.now();
+  
   try {
     const requestBody = req.body as SimulationRequest;
+    const { sessionId } = req.query; // Optional session ID
 
     // Validate request
     if (!requestBody.contractId) {
@@ -58,6 +62,26 @@ export const simulateInvocation = async (req: Request, res: Response): Promise<v
       result.stateDiff = service.getStateDiff(result);
     }
 
+    // Calculate duration
+    const duration = Date.now() - startTime;
+
+    // Log to session if session ID provided
+    if (sessionId && typeof sessionId === 'string') {
+      const sessionStore = getSessionStore();
+      
+      if (sessionStore.hasSession(sessionId)) {
+        sessionStore.addInvocation(sessionId, {
+          timestamp,
+          requestId,
+          contractId: requestBody.contractId,
+          method: requestBody.method,
+          args: requestBody.args,
+          result,
+          duration
+        });
+      }
+    }
+
     // Return result
     if (result.success) {
       res.status(200).json({
@@ -65,7 +89,9 @@ export const simulateInvocation = async (req: Request, res: Response): Promise<v
         message: 'Simulation completed successfully',
         data: result,
         requestId,
-        timestamp
+        timestamp,
+        duration,
+        sessionId: sessionId as string | undefined
       } as SimulationResponse);
     } else {
       res.status(400).json({
@@ -73,7 +99,8 @@ export const simulateInvocation = async (req: Request, res: Response): Promise<v
         message: 'Simulation failed',
         error: result.error,
         requestId,
-        timestamp
+        timestamp,
+        duration
       } as SimulationResponse);
     }
   } catch (error) {
@@ -81,7 +108,8 @@ export const simulateInvocation = async (req: Request, res: Response): Promise<v
     res.status(500).json({
       success: false,
       message: 'Internal server error during simulation',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
+      duration: Date.now() - startTime
     } as SimulationResponse);
   }
 };
