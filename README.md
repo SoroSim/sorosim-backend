@@ -58,7 +58,11 @@ npm run lint
   - Content-Type: `multipart/form-data`
   - Field name: `wasm`
   - Accepts: `.wasm` files (max 10 MB)
-  - Returns: File metadata including SHA-256 hash
+  - Returns: File metadata including SHA-256 hash and extracted ABI (contract functions)
+- `POST /api/wasm/analyze` - Analyze WASM from base64 string
+  - Content-Type: `application/json`
+  - Body: `{ "wasmBase64": "..." }`
+  - Returns: WASM analysis with contract functions, exports, and imports
 
 ### Mock Ledger Store
 - `GET /api/ledger/stats` - Get ledger store statistics
@@ -118,12 +122,46 @@ Response:
 ```json
 {
   "success": true,
-  "message": "WASM file uploaded successfully",
+  "message": "WASM file uploaded and analyzed successfully",
   "data": {
     "filename": "contract.wasm",
     "size": 45678,
     "hash": "a1b2c3d4...",
-    "uploadedAt": "2026-08-27T10:30:00.000Z"
+    "uploadedAt": "2026-08-27T10:30:00.000Z",
+    "abi": {
+      "functions": ["increment", "get_count", "reset"],
+      "exports": ["increment", "get_count", "reset", "memory", "__data_end"],
+      "imports": ["env.abort"]
+    }
+  }
+}
+```
+
+### Example: Analyze WASM
+
+```bash
+curl -X POST http://localhost:3000/api/wasm/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "wasmBase64": "AGFzbQEAAAABB..."
+  }'
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "WASM analyzed successfully",
+  "data": {
+    "size": 45678,
+    "hash": "a1b2c3d4...",
+    "valid": true,
+    "abi": {
+      "functions": ["increment", "get_count"],
+      "exports": ["increment", "get_count", "memory"],
+      "imports": ["env.abort"],
+      "metadata": {}
+    }
   }
 }
 ```
