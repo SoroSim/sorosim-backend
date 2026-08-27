@@ -2,6 +2,8 @@
  * Simulation request and response types
  */
 
+import { StateDiff } from './stateDiff';
+
 /**
  * Simulation request parameters
  */
@@ -35,6 +37,7 @@ export interface SimulationResult {
   cost?: SimulationCost; // Resource consumption
   latestLedger?: number; // Latest ledger sequence
   error?: string; // Error message if failed
+  stateDiff?: StateDiff; // Parsed state changes
 }
 
 /**

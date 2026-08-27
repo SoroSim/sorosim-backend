@@ -143,7 +143,33 @@ Response:
     "events": [],
     "transactionData": "...",
     "minResourceFee": "100",
-    "latestLedger": 12345
+    "latestLedger": 12345,
+    "stateDiff": {
+      "ledgerEntryChanges": [
+        {
+          "key": "footprint:changed",
+          "type": "footprint",
+          "changeType": "updated"
+        }
+      ],
+      "storageChanges": [
+        {
+          "contract": "unknown",
+          "key": "footprint:changed",
+          "durability": "persistent",
+          "changeType": "updated"
+        }
+      ],
+      "balanceChanges": [],
+      "events": [],
+      "summary": {
+        "totalChanges": 1,
+        "entriesCreated": 0,
+        "entriesUpdated": 1,
+        "entriesDeleted": 0,
+        "eventsEmitted": 0
+      }
+    }
   },
   "requestId": "550e8400-e29b-41d4-a716-446655440000",
   "timestamp": "2026-08-27T10:30:00.000Z"

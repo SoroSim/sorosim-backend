@@ -10,15 +10,19 @@ import {
 } from '@stellar/stellar-sdk';
 import { SorobanClient } from '../engine/sorobanClient';
 import { SimulationRequest, SimulationResult } from '../types/simulation';
+import { StateDiffService } from './stateDiffService';
+import { StateDiff } from '../types/stateDiff';
 
 /**
  * Service for simulating Soroban contract invocations
  */
 export class SimulationService {
   private sorobanClient: SorobanClient;
+  private stateDiffService: StateDiffService;
 
   constructor(sorobanClient: SorobanClient) {
     this.sorobanClient = sorobanClient;
+    this.stateDiffService = new StateDiffService();
   }
 
   /**
@@ -74,6 +78,16 @@ export class SimulationService {
         error: error instanceof Error ? error.message : 'Unknown simulation error'
       };
     }
+  }
+
+  /**
+   * Get state diff from simulation result
+   * 
+   * @param simulationResult - Simulation result
+   * @returns Parsed state diff
+   */
+  getStateDiff(simulationResult: SimulationResult): StateDiff {
+    return this.stateDiffService.parseSimulationResult(simulationResult);
   }
 
   /**

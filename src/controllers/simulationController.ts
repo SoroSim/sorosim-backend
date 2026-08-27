@@ -53,6 +53,11 @@ export const simulateInvocation = async (req: Request, res: Response): Promise<v
     const service = getSimulationService();
     const result = await service.simulateInvocation(requestBody);
 
+    // Add state diff if simulation was successful
+    if (result.success && !result.error) {
+      result.stateDiff = service.getStateDiff(result);
+    }
+
     // Return result
     if (result.success) {
       res.status(200).json({
