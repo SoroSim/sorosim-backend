@@ -3,10 +3,15 @@
   "version": "1.0.0",
   "description": "Soroban Contract Simulation & Dry-Run Sandbox Backend",
   "main": "dist/index.js",
+  "bin": {
+    "sorosim": "./dist/cli/index.js"
+  },
   "scripts": {
     "build": "tsc",
+    "build:cli": "tsc && chmod +x dist/cli/index.js || echo Done",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "start": "node dist/index.js",
+    "cli": "ts-node src/cli/index.ts",
     "lint": "eslint src --ext .ts",
     "test": "jest"
   },
@@ -14,12 +19,16 @@
     "soroban",
     "stellar",
     "blockchain",
-    "simulation"
+    "simulation",
+    "cli"
   ],
   "author": "",
   "license": "MIT",
   "dependencies": {
     "@stellar/stellar-sdk": "^17.0.1",
+    "axios": "^1.7.9",
+    "chalk": "4.1.2",
+    "commander": "^12.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",

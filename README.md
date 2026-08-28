@@ -47,6 +47,64 @@ npm start
 npm run lint
 ```
 
+## CLI Tool
+
+SoroSim includes a companion CLI tool for interacting with the backend from the command line.
+
+### Installation
+
+After building the project, you can use the CLI:
+
+```bash
+# Build the CLI
+npm run build:cli
+
+# Or use directly with ts-node during development
+npm run cli -- --help
+```
+
+For global installation:
+
+```bash
+npm install -g .
+sorosim --help
+```
+
+### CLI Usage
+
+```bash
+# Global options
+sorosim --help
+sorosim --version
+sorosim --url http://localhost:3000  # Specify backend URL
+
+# Simulate a contract invocation
+sorosim simulate -c <contract-id> -m <method> -a '[...]' --network testnet
+
+# Ledger management
+sorosim ledger stats                # View ledger statistics
+sorosim ledger list                 # List all entries
+sorosim ledger list -t account      # Filter by type
+sorosim ledger clear --yes          # Clear all entries
+
+# Session management
+sorosim session list                # List all sessions
+sorosim session create              # Create new session
+sorosim session info <session-id>   # Get session details
+
+# Network configuration
+sorosim network list                # List available networks
+sorosim network set-default <id>    # Set default network
+
+# Snapshot management
+sorosim snapshot list               # List snapshots
+sorosim snapshot save <filename>    # Save current state
+sorosim snapshot load <filename>    # Load snapshot
+sorosim snapshot export [file]      # Export to file or stdout
+```
+
+For detailed CLI documentation, see [CLI.md](./CLI.md).
+
 ## API Endpoints
 
 ### General
