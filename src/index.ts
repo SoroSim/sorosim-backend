@@ -13,6 +13,7 @@ import sessionRoutes from './routes/sessionRoutes';
 import networkRoutes from './routes/networkRoutes';
 import diffRoutes from './routes/diffRoutes';
 import eventRoutes from './routes/eventRoutes';
+import reportRoutes from './routes/reportRoutes';
 
 dotenv.config();
 
@@ -38,6 +39,7 @@ app.use('/api/sessions', sessionRoutes);
 app.use('/api/networks', networkRoutes);
 app.use('/api/diff', diffRoutes);
 app.use('/api/events', eventRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Error handling middleware
 app.use((err: Error, _req: Request, res: Response, _next: express.NextFunction) => {

@@ -82,6 +82,17 @@ npm run lint
 - `POST /api/events/group` - Group events by contract ID
   - Body: `{ "events": [ ... ] }`
 
+### Simulation Reports
+- `POST /api/reports/simulation` - Export a single simulation as comprehensive JSON report
+  - Body: `{ "request": {...}, "result": {...}, "requestId": "...", "timestamp": "...", "duration": 100, "networkId": "testnet", "options": {...} }`
+  - Query: `?download=true` to download as file
+- `POST /api/reports/session/:sessionId` - Export all simulations from a session as batch report
+  - Body: `{ "options": {...} }` (optional)
+  - Query: `?download=true` to download as file
+- `POST /api/reports/batch` - Export multiple simulations as batch report
+  - Body: `{ "simulations": [ ... ], "metadata": {...}, "options": {...} }`
+  - Query: `?download=true` to download as file
+
 ### WASM Management
 - `POST /api/wasm/upload` - Upload a WASM contract file
   - Content-Type: `multipart/form-data`
@@ -835,6 +846,188 @@ Response:
   }
 }
 ```
+
+### Example: Export Single Simulation Report
+
+```bash
+curl -X POST http://localhost:3000/api/reports/simulation \
+  -H "Content-Type: application/json" \
+  -d '{
+    "request": {
+      "contractId": "CA3D5KRYM6CB7OWQ6TWYRR3Z4T7GNZLKERYNZGGA5SOAOPIFY6YQGAXE",
+      "method": "increment",
+      "args": []
+    },
+    "result": {
+      "success": true,
+      "result": "...",
+      "events": [...],
+      "stateDiff": {...}
+    },
+    "requestId": "550e8400-e29b-41d4-a716-446655440000",
+    "timestamp": "2026-08-28T10:30:00.000Z",
+    "duration": 150,
+    "networkId": "testnet",
+    "options": {
+      "format": "pretty-json",
+      "includeStateDiff": true,
+      "includeEvents": true,
+      "metadata": {
+        "description": "Test simulation for increment function"
+      }
+    }
+  }'
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "Simulation report generated successfully",
+  "data": {
+    "reportId": "7a8b9c0d-e1f2-4g5h-6i7j-8k9l0m1n2o3p",
+    "generatedAt": "2026-08-28T10:31:00.000Z",
+    "version": "1.0.0",
+    "metadata": {
+      "description": "Test simulation for increment function"
+    },
+    "simulation": {
+      "request": {...},
+      "requestId": "550e8400-e29b-41d4-a716-446655440000",
+      "timestamp": "2026-08-28T10:30:00.000Z",
+      "contractId": "CA3D5...",
+      "method": "increment",
+      "args": []
+    },
+    "network": {
+      "networkId": "testnet",
+      "networkName": "Stellar Testnet",
+      "rpcUrl": "https://soroban-testnet.stellar.org",
+      "networkPassphrase": "Test SDF Network ; September 2015",
+      "latestLedger": 12345
+    },
+    "result": {...},
+    "stateDiff": {...},
+    "performance": {
+      "duration": 150,
+      "cpuInsns": "1234567",
+      "memBytes": "8192",
+      "minResourceFee": "100"
+    },
+    "summary": {
+      "success": true,
+      "hasResult": true,
+      "hasEvents": true,
+      "hasStateDiff": true,
+      "hasAuth": false,
+      "eventCount": 3,
+      "stateChanges": 5,
+      "authRequirements": 0
+    }
+  }
+}
+```
+
+### Example: Download Simulation Report as File
+
+```bash
+curl -X POST "http://localhost:3000/api/reports/simulation?download=true" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "request": {...},
+    "result": {...},
+    "requestId": "...",
+    "timestamp": "...",
+    "duration": 150
+  }' \
+  --output simulation-report.json
+```
+
+### Example: Export Session as Batch Report
+
+```bash
+# Export all simulations from a session
+curl -X POST "http://localhost:3000/api/reports/session/550e8400-e29b-41d4-a716-446655440000?download=true" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "options": {
+      "format": "pretty-json",
+      "includeStateDiff": true
+    }
+  }' \
+  --output session-report.json
+```
+
+Response (when download=false):
+```json
+{
+  "success": true,
+  "message": "Session report generated successfully",
+  "data": {
+    "reportId": "9b8c7d6e-5f4a-3b2c-1d0e-9f8a7b6c5d4e",
+    "generatedAt": "2026-08-28T10:35:00.000Z",
+    "version": "1.0.0",
+    "metadata": {
+      "sessionId": "550e8400-e29b-41d4-a716-446655440000",
+      "sessionName": "My Test Session",
+      "sessionCreatedAt": "2026-08-28T10:00:00.000Z"
+    },
+    "simulations": [
+      {
+        "reportId": "...",
+        "simulation": {...},
+        "result": {...},
+        "summary": {...}
+      }
+    ],
+    "batchSummary": {
+      "totalSimulations": 10,
+      "successfulSimulations": 9,
+      "failedSimulations": 1,
+      "totalDuration": 1500,
+      "averageDuration": 150,
+      "uniqueContracts": 2,
+      "uniqueMethods": 5,
+      "totalEvents": 25,
+      "totalStateChanges": 18
+    }
+  }
+}
+```
+
+### Example: Export Custom Batch Report
+
+```bash
+curl -X POST http://localhost:3000/api/reports/batch \
+  -H "Content-Type: application/json" \
+  -d '{
+    "simulations": [
+      {
+        "request": {...},
+        "result": {...},
+        "requestId": "...",
+        "timestamp": "...",
+        "duration": 150
+      },
+      {
+        "request": {...},
+        "result": {...},
+        "requestId": "...",
+        "timestamp": "...",
+        "duration": 200
+      }
+    ],
+    "metadata": {
+      "description": "Performance test simulations",
+      "tags": ["performance", "testing"]
+    },
+    "options": {
+      "format": "pretty-json",
+      "includeEvents": false
+    }
+  }'
+```
+
 
 
 
