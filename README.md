@@ -93,6 +93,15 @@ npm run lint
   - Body: `{ "simulations": [ ... ], "metadata": {...}, "options": {...} }`
   - Query: `?download=true` to download as file
 
+### XDR Conversion
+- `POST /api/xdr/scval` - Convert ScVal XDR to human-readable JSON
+  - Body: `{ "xdr": "base64-xdr-string", "pretty": true }`
+- `POST /api/xdr/scval/batch` - Convert multiple ScVal XDRs to JSON
+  - Body: `{ "xdrs": ["xdr1", "xdr2", ...] }`
+- `POST /api/xdr/simulation` - Convert simulation result values to JSON
+  - Body: `{ "result": <scval>, "events": [...], "auth": [...] }`
+- `GET /api/xdr/types` - Get supported ScVal types information
+
 ### WASM Management
 - `POST /api/wasm/upload` - Upload a WASM contract file
   - Content-Type: `multipart/form-data`
@@ -1027,6 +1036,113 @@ curl -X POST http://localhost:3000/api/reports/batch \
     }
   }'
 ```
+
+### Example: Convert ScVal XDR to JSON
+
+```bash
+curl -X POST http://localhost:3000/api/xdr/scval \
+  -H "Content-Type: application/json" \
+  -d '{
+    "xdr": "AAAABgAAAAEAAAABcg==",
+    "pretty": true
+  }'
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "XDR converted to JSON successfully",
+  "data": {
+    "type": "vec",
+    "value": [
+      {
+        "type": "string",
+        "value": "r",
+        "native": "r"
+      }
+    ],
+    "native": ["r"],
+    "raw": "AAAABgAAAAEAAAABcg=="
+  },
+  "prettyPrint": "{\n  \"type\": \"vec\",\n  \"value\": [...],\n  \"native\": [\"r\"],\n  \"raw\": \"AAAABgAAAAEAAAABcg==\"\n}"
+}
+```
+
+### Example: Batch Convert ScVal XDRs
+
+```bash
+curl -X POST http://localhost:3000/api/xdr/scval/batch \
+  -H "Content-Type: application/json" \
+  -d '{
+    "xdrs": [
+      "AAAAAwAAAAo=",
+      "AAAABQAAAAVoZWxsbw==",
+      "AAAABg=="
+    ]
+  }'
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "XDRs converted to JSON successfully",
+  "data": {
+    "results": [
+      {
+        "type": "number",
+        "value": 10,
+        "native": 10,
+        "raw": "AAAAAwAAAAo="
+      },
+      {
+        "type": "string",
+        "value": "hello",
+        "native": "hello",
+        "raw": "AAAABQAAAAVoZWxsbw=="
+      },
+      {
+        "type": "vec",
+        "value": [],
+        "native": [],
+        "raw": "AAAABg=="
+      }
+    ],
+    "count": 3
+  }
+}
+```
+
+### Example: Get Supported ScVal Types
+
+```bash
+curl http://localhost:3000/api/xdr/types
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "Supported ScVal types",
+  "data": {
+    "types": [
+      { "type": "bool", "description": "Boolean value (true/false)" },
+      { "type": "void", "description": "Void/null value" },
+      { "type": "u32", "description": "Unsigned 32-bit integer" },
+      { "type": "i32", "description": "Signed 32-bit integer" },
+      { "type": "u64", "description": "Unsigned 64-bit integer" },
+      { "type": "string", "description": "String value" },
+      { "type": "symbol", "description": "Symbol (identifier)" },
+      { "type": "vec", "description": "Vector/array of ScVals" },
+      { "type": "map", "description": "Map of key-value pairs" },
+      { "type": "address", "description": "Stellar address (account or contract)" }
+    ],
+    "count": 10
+  }
+}
+```
+
 
 
 

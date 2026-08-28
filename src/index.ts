@@ -14,6 +14,7 @@ import networkRoutes from './routes/networkRoutes';
 import diffRoutes from './routes/diffRoutes';
 import eventRoutes from './routes/eventRoutes';
 import reportRoutes from './routes/reportRoutes';
+import xdrRoutes from './routes/xdrRoutes';
 
 dotenv.config();
 
@@ -40,6 +41,7 @@ app.use('/api/networks', networkRoutes);
 app.use('/api/diff', diffRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/xdr', xdrRoutes);
 
 // Error handling middleware
 app.use((err: Error, _req: Request, res: Response, _next: express.NextFunction) => {
