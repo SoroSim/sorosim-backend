@@ -81,6 +81,9 @@ sorosim --url http://localhost:3000  # Specify backend URL
 # Simulate a contract invocation
 sorosim simulate -c <contract-id> -m <method> -a '[...]' --network testnet
 
+# Simulate with WASM upload
+sorosim simulate -w contract.wasm -m <method> --arg value1 --arg value2 --show-abi
+
 # Ledger management
 sorosim ledger stats                # View ledger statistics
 sorosim ledger list                 # List all entries

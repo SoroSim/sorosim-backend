@@ -36,16 +36,34 @@ sorosim --url http://localhost:3000 [command]
 ### Simulate Contract Invocation
 
 ```bash
-# Basic simulation
+# Basic simulation with contract ID
 sorosim simulate \
   --contract CA3D5KRYM6CB7OWQ6TWYRR3Z4T7GNZLKERYNZGGA5SOAOPIFY6YQGAXE \
   --method increment
 
-# With arguments
+# Simulate with WASM file upload
+sorosim simulate \
+  --wasm ./path/to/contract.wasm \
+  --method increment \
+  --show-abi
+
+# With arguments (JSON format)
 sorosim simulate \
   --contract CA3D5... \
   --method transfer \
   --args '[{"type": "address", "value": "GABC..."}, 100]'
+
+# With individual arguments (auto-typed)
+sorosim simulate \
+  --contract CA3D5... \
+  --method add \
+  --arg 10 --arg 20
+
+# Mixed types with auto-detection
+sorosim simulate \
+  --contract CA3D5... \
+  --method process \
+  --arg hello --arg 42 --arg true --arg null
 
 # With network and session
 sorosim simulate \
@@ -54,9 +72,36 @@ sorosim simulate \
   --network testnet \
   --session 550e8400-e29b-41d4-a716-446655440000
 
+# Upload WASM and simulate in one command
+sorosim simulate \
+  --wasm ./counter.wasm \
+  --method increment \
+  --arg 1 \
+  --show-abi
+
 # JSON output
 sorosim --json simulate --contract CA3D5... --method increment
 ```
+
+**Simulate Options:**
+- `-c, --contract <id>` - Contract ID (required unless --wasm is provided)
+- `-w, --wasm <path>` - Path to WASM file to upload and use
+- `-m, --method <name>` - Contract method name (required)
+- `-a, --args <json>` - Arguments as JSON array (e.g., `'[1, "hello", true]'`)
+- `--arg <value...>` - Individual arguments with auto-type detection. Can be used multiple times
+- `-s, --source <account>` - Source account public key
+- `-f, --fee <amount>` - Transaction fee in stroops
+- `-n, --network <id>` - Network ID to use for simulation
+- `--session <id>` - Session ID to log simulation to
+- `--show-abi` - Show contract ABI after WASM upload
+
+**Argument Auto-Typing:**
+The `--arg` flag automatically detects types:
+- Numbers: `--arg 42` → `42`
+- Strings: `--arg hello` → `"hello"`
+- Booleans: `--arg true` → `true`
+- Null: `--arg null` → `null`
+- JSON: `--arg '{"key":"value"}' → `{"key":"value"}`
 
 ### Ledger Management
 
