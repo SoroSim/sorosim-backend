@@ -101,6 +101,10 @@ npm run lint
 - `POST /api/xdr/simulation` - Convert simulation result values to JSON
   - Body: `{ "result": <scval>, "events": [...], "auth": [...] }`
 - `GET /api/xdr/types` - Get supported ScVal types information
+- `POST /api/xdr/encode` - Encode JSON value to ScVal XDR
+  - Body: `{ "value": <any-json-value>, "type": "optional-explicit-type" }`
+- `POST /api/xdr/encode/batch` - Encode multiple JSON values to ScVal XDRs
+  - Body: `{ "values": [{ "value": ..., "type": "..." }, ...] }`
 
 ### WASM Management
 - `POST /api/wasm/upload` - Upload a WASM contract file
@@ -1139,6 +1143,112 @@ Response:
       { "type": "address", "description": "Stellar address (account or contract)" }
     ],
     "count": 10
+  }
+}
+```
+
+### Example: Encode JSON to ScVal XDR
+
+```bash
+# Auto-detect type
+curl -X POST http://localhost:3000/api/xdr/encode \
+  -H "Content-Type: application/json" \
+  -d '{
+    "value": 42
+  }'
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "JSON encoded to ScVal XDR successfully",
+  "data": {
+    "xdr": "AAAAAwAAACoAAAAA",
+    "type": "number",
+    "original": 42
+  }
+}
+```
+
+### Example: Encode JSON with Explicit Type
+
+```bash
+curl -X POST http://localhost:3000/api/xdr/encode \
+  -H "Content-Type: application/json" \
+  -d '{
+    "value": "hello",
+    "type": "symbol"
+  }'
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "JSON encoded to ScVal XDR successfully",
+  "data": {
+    "xdr": "AAAADgAAAAVoZWxsbw==",
+    "type": "symbol",
+    "original": "hello"
+  }
+}
+```
+
+### Example: Batch Encode JSON Values
+
+```bash
+curl -X POST http://localhost:3000/api/xdr/encode/batch \
+  -H "Content-Type: application/json" \
+  -d '{
+    "values": [
+      { "value": true, "type": "bool" },
+      { "value": 100, "type": "u64" },
+      { "value": "test_symbol", "type": "symbol" },
+      { "value": [1, 2, 3] },
+      { "value": { "key": "value" } }
+    ]
+  }'
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "JSON values encoded to ScVal XDRs successfully",
+  "data": {
+    "results": [
+      { "xdr": "AAAAAgAAAAE=", "type": "bool" },
+      { "xdr": "AAAACQAAAABkAAAA", "type": "u64" },
+      { "xdr": "AAAADgAAAAt0ZXN0X3N5bWJvbA==", "type": "symbol" },
+      { "xdr": "AAAABgAAAAMAAAADAAAAAQAAAAMAAAAC...", "type": "vec" },
+      { "xdr": "AAAAEQAAAAEAAAAFa2V5AAAAAAAAABUA...", "type": "object" }
+    ],
+    "count": 5
+  }
+}
+```
+
+### Example: Encode Address
+
+```bash
+curl -X POST http://localhost:3000/api/xdr/encode \
+  -H "Content-Type: application/json" \
+  -d '{
+    "value": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF",
+    "type": "address"
+  }'
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "JSON encoded to ScVal XDR successfully",
+  "data": {
+    "xdr": "AAAAEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    "type": "address",
+    "original": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF"
   }
 }
 ```

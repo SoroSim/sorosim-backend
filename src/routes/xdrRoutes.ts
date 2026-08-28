@@ -3,7 +3,9 @@ import {
   convertScValToJson,
   convertBatchScValToJson,
   convertSimulationResult,
-  getScValTypes
+  getScValTypes,
+  convertJsonToScVal,
+  convertBatchJsonToScVal
 } from '../controllers/xdrController';
 
 const router = Router();
@@ -23,5 +25,11 @@ router.post('/simulation', convertSimulationResult);
 
 // GET /api/xdr/types - Get supported ScVal types information
 router.get('/types', getScValTypes);
+
+// POST /api/xdr/encode - Encode JSON value to ScVal XDR
+router.post('/encode', convertJsonToScVal);
+
+// POST /api/xdr/encode/batch - Encode multiple JSON values to ScVal XDRs
+router.post('/encode/batch', convertBatchJsonToScVal);
 
 export default router;

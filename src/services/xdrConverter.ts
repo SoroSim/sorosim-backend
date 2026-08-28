@@ -1,4 +1,4 @@
-import { xdr, scValToNative } from '@stellar/stellar-sdk';
+import { xdr, scValToNative, nativeToScVal, Address } from '@stellar/stellar-sdk';
 
 /**
  * JSON representation of ScVal types
@@ -11,7 +11,15 @@ export interface ScValJson {
 }
 
 /**
- * Service for converting XDR ScVal types to JSON
+ * Encoded ScVal result
+ */
+export interface EncodedScVal {
+  xdr: string; // Base64 encoded XDR
+  type: string; // Detected type
+}
+
+/**
+ * Service for converting XDR ScVal types to/from JSON
  */
 export class XdrConverter {
   /**
@@ -163,5 +171,177 @@ export class XdrConverter {
    */
   batchConvert(xdrStrings: string[], xdrType: 'ScVal'): ScValJson[] {
     return xdrStrings.map(xdrStr => this.xdrStringToJson(xdrStr, xdrType));
+  }
+
+  /**
+   * Convert JSON value to ScVal XDR
+   * 
+   * @param value - JavaScript value to encode
+   * @param explicitType - Optional explicit type hint
+   * @returns Encoded ScVal
+   */
+  jsonToScVal(value: unknown, explicitType?: string): EncodedScVal {
+    try {
+      let scVal: xdr.ScVal;
+
+      // Handle explicit type hints
+      if (explicitType) {
+        scVal = this.encodeWithType(value, explicitType);
+      } else {
+        // Auto-detect type and encode
+        scVal = this.autoEncode(value);
+      }
+
+      return {
+        xdr: scVal.toXDR('base64'),
+        type: explicitType || this.inferType(value)
+      };
+    } catch (error) {
+      throw new Error(`Failed to encode to ScVal: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Auto-encode value to ScVal based on type detection
+   * 
+   * @param value - Value to encode
+   * @returns ScVal XDR
+   */
+  private autoEncode(value: unknown): xdr.ScVal {
+    // Handle null/undefined as void
+    if (value === null || value === undefined) {
+      return nativeToScVal(null);
+    }
+
+    // Handle boolean
+    if (typeof value === 'boolean') {
+      return nativeToScVal(value, { type: 'bool' });
+    }
+
+    // Handle numbers
+    if (typeof value === 'number') {
+      // Default to u32 for positive integers, i32 for others
+      if (Number.isInteger(value) && value >= 0 && value <= 4294967295) {
+        return nativeToScVal(value, { type: 'u32' });
+      }
+      return nativeToScVal(value, { type: 'i32' });
+    }
+
+    // Handle bigint
+    if (typeof value === 'bigint') {
+      return nativeToScVal(value, { type: 'u64' });
+    }
+
+    // Handle string - try to detect if it's an address
+    if (typeof value === 'string') {
+      // Check if it's an address
+      if (this.isAddress(value)) {
+        return nativeToScVal(value, { type: 'address' });
+      }
+      // Default to symbol for short strings, string for longer ones
+      if (value.length <= 32 && /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(value)) {
+        return nativeToScVal(value, { type: 'symbol' });
+      }
+      return nativeToScVal(value, { type: 'string' });
+    }
+
+    // Handle arrays as vectors - use direct conversion
+    if (Array.isArray(value)) {
+      return nativeToScVal(value);
+    }
+
+    // Handle objects as maps - use direct conversion
+    if (typeof value === 'object') {
+      return nativeToScVal(value);
+    }
+
+    // Fallback to direct conversion
+    return nativeToScVal(value);
+  }
+
+  /**
+   * Encode value with explicit type
+   * 
+   * @param value - Value to encode
+   * @param type - Explicit type
+   * @returns ScVal XDR
+   */
+  private encodeWithType(value: unknown, type: string): xdr.ScVal {
+    switch (type.toLowerCase()) {
+      case 'bool':
+        return nativeToScVal(Boolean(value), { type: 'bool' });
+      
+      case 'void':
+        return nativeToScVal(null);
+      
+      case 'u32':
+      case 'i32':
+      case 'u64':
+      case 'i64':
+      case 'u128':
+      case 'i128':
+      case 'u256':
+      case 'i256':
+        return nativeToScVal(value, { type: type as 'u32' | 'i32' | 'u64' | 'i64' | 'u128' | 'i128' | 'u256' | 'i256' });
+      
+      case 'string':
+        return nativeToScVal(String(value), { type: 'string' });
+      
+      case 'symbol':
+        return nativeToScVal(String(value), { type: 'symbol' });
+      
+      case 'bytes':
+        if (typeof value === 'string') {
+          // Assume hex or base64
+          const buffer = Buffer.from(value, 'hex');
+          return nativeToScVal(buffer, { type: 'bytes' });
+        }
+        return nativeToScVal(value, { type: 'bytes' });
+      
+      case 'vec':
+        // Use direct conversion for arrays
+        return nativeToScVal(value);
+      
+      case 'map':
+        // Use direct conversion for objects
+        return nativeToScVal(value);
+      
+      case 'address':
+        return nativeToScVal(String(value), { type: 'address' });
+      
+      case 'timepoint':
+        return nativeToScVal(value, { type: 'timepoint' });
+      
+      case 'duration':
+        return nativeToScVal(value, { type: 'duration' });
+      
+      default:
+        throw new Error(`Unsupported type: ${type}`);
+    }
+  }
+
+  /**
+   * Check if string is a Stellar address
+   * 
+   * @param value - String to check
+   * @returns True if valid address
+   */
+  private isAddress(value: string): boolean {
+    try {
+      Address.fromString(value);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Batch convert JSON values to ScVal XDRs
+   * 
+   * @param values - Array of value/type pairs
+   * @returns Array of encoded ScVals
+   */
+  batchJsonToScVal(values: Array<{ value: unknown; type?: string }>): EncodedScVal[] {
+    return values.map(({ value, type }) => this.jsonToScVal(value, type));
   }
 }

@@ -179,3 +179,80 @@ export const getScValTypes = async (_req: Request, res: Response): Promise<void>
     });
   }
 };
+
+/**
+ * Convert JSON value to ScVal XDR
+ */
+export const convertJsonToScVal = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { value, type } = req.body as { value: unknown; type?: string };
+
+    // Validate request
+    if (value === undefined) {
+      res.status(400).json({
+        success: false,
+        message: 'Value is required',
+        error: 'Missing value in request body'
+      });
+      return;
+    }
+
+    const converter = new XdrConverter();
+    const result = converter.jsonToScVal(value, type);
+
+    res.status(200).json({
+      success: true,
+      message: 'JSON encoded to ScVal XDR successfully',
+      data: {
+        xdr: result.xdr,
+        type: result.type,
+        original: value
+      }
+    });
+  } catch (error) {
+    console.error('Convert JSON to ScVal error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to encode JSON to ScVal XDR',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+/**
+ * Convert multiple JSON values to ScVal XDRs
+ */
+export const convertBatchJsonToScVal = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { values } = req.body as { values: Array<{ value: unknown; type?: string }> };
+
+    // Validate request
+    if (!values || !Array.isArray(values) || values.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: 'Values array is required',
+        error: 'Missing or empty values array in request body'
+      });
+      return;
+    }
+
+    const converter = new XdrConverter();
+    const results = converter.batchJsonToScVal(values);
+
+    res.status(200).json({
+      success: true,
+      message: 'JSON values encoded to ScVal XDRs successfully',
+      data: {
+        results,
+        count: results.length
+      }
+    });
+  } catch (error) {
+    console.error('Convert batch JSON to ScVal error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to encode JSON values to ScVal XDRs',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
