@@ -1,5 +1,8 @@
 # SoroSim Backend
 
+[![CI](https://github.com/YOUR_USERNAME/SoroSim-backend/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/SoroSim-backend/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/YOUR_USERNAME/SoroSim-backend/branch/main/graph/badge.svg)](https://codecov.io/gh/YOUR_USERNAME/SoroSim-backend)
+
 Soroban Contract Simulation & Dry-Run Sandbox Backend - A REST API for simulating Soroban smart contract invocations with mock ledger state.
 
 ## Features
@@ -58,6 +61,42 @@ npm run test:watch
 
 # Run tests with coverage
 npm run test:coverage
+```
+
+## CI/CD
+
+This project uses GitHub Actions for continuous integration and deployment.
+
+### Workflows
+
+**CI Pipeline** (`.github/workflows/ci.yml`)
+- Runs on every push and pull request to `main` and `develop` branches
+- **Lint Job**: Runs ESLint to check code quality
+- **Build Job**: Compiles TypeScript and uploads build artifacts
+- **Test Job**: Runs integration tests on Node.js 18 and 20, generates coverage reports
+- **Integration Job**: Verifies CLI builds and basic functionality
+
+### Status Badges
+
+- **CI Status**: Shows whether the latest build passed
+- **Code Coverage**: Tracks test coverage percentage (via Codecov)
+
+Update the badge URLs in README.md with your GitHub username after pushing to GitHub:
+```markdown
+[![CI](https://github.com/YOUR_USERNAME/SoroSim-backend/actions/workflows/ci.yml/badge.svg)](...)
+[![codecov](https://codecov.io/gh/YOUR_USERNAME/SoroSim-backend/branch/main/graph/badge.svg)](...)
+```
+
+### Local CI Simulation
+
+You can run the same checks locally before pushing:
+
+```bash
+# Run all CI checks
+npm run lint && npm run build && npm test
+
+# Run with coverage
+npm run lint && npm run build && npm run test:coverage
 ```
 
 ## CLI Tool

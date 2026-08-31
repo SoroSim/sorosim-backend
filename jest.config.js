@@ -11,11 +11,16 @@ module.exports = {
   transformIgnorePatterns: [
     'node_modules/(?!(uint8array-extras)/)',
   ],
+  moduleNameMapper: {
+    '^@stellar/stellar-sdk$': '<rootDir>/src/__tests__/__mocks__/stellar-sdk.ts',
+    '^uuid$': '<rootDir>/src/__tests__/__mocks__/uuid.ts',
+  },
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',
     '!src/cli/**',
     '!src/index.ts',
+    '!src/__tests__/**',
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
