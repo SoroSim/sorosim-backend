@@ -164,6 +164,99 @@ sorosim snapshot export [file]      # Export to file or stdout
 
 For detailed CLI documentation, see [CLI.md](./CLI.md).
 
+## Docker
+
+SoroSim Backend can be run in Docker with a local Stellar Quickstart node for complete local development.
+
+### Quick Start with Docker Compose
+
+```bash
+# Start both backend and Stellar Quickstart
+docker-compose up -d
+
+# View logs
+docker-compose logs -f sorosim-backend
+
+# Stop all services
+docker-compose down
+
+# Stop and remove volumes (clean slate)
+docker-compose down -v
+```
+
+### What's Included
+
+The Docker Compose setup includes:
+
+1. **SoroSim Backend** - The REST API running on port 3000
+2. **Stellar Quickstart** - Local Stellar node with Soroban RPC on port 8000
+
+Both services are connected via a Docker network and configured to work together automatically.
+
+### Accessing Services
+
+- **Backend API**: http://localhost:3000
+- **API Documentation**: http://localhost:3000/api-docs
+- **Stellar Horizon**: http://localhost:8000
+- **Soroban RPC**: http://localhost:8000/soroban/rpc
+
+### Data Persistence
+
+The following directories are mounted as volumes:
+- `./snapshots` - Ledger snapshots persist across container restarts
+- `./uploads` - Uploaded WASM files persist across container restarts
+- `stellar-data` - Stellar node data (named volume)
+
+### Building the Docker Image
+
+```bash
+# Build the image manually
+docker build -t sorosim-backend:latest .
+
+# Run the container
+docker run -p 3000:3000 \
+  -e SOROBAN_RPC_URL=https://soroban-testnet.stellar.org \
+  sorosim-backend:latest
+```
+
+### Environment Variables
+
+Configure the backend using environment variables (set in `docker-compose.yaml` or `.env`):
+
+- `NODE_ENV` - Environment mode (production, development)
+- `PORT` - Server port (default: 3000)
+- `DEFAULT_NETWORK` - Default network ID (testnet, futurenet, mainnet, local-quickstart)
+- `SOROBAN_RPC_URL` - Soroban RPC endpoint URL
+- `NETWORK_PASSPHRASE` - Network passphrase for transaction signing
+
+### Health Checks
+
+Both services include health checks:
+
+```bash
+# Check backend health
+curl http://localhost:3000/health
+
+# Check Stellar Quickstart health
+curl http://localhost:8000/
+```
+
+### Development with Docker
+
+```bash
+# Rebuild after code changes
+docker-compose up -d --build
+
+# View real-time logs
+docker-compose logs -f
+
+# Execute commands in container
+docker-compose exec sorosim-backend sh
+
+# Run CLI commands
+docker-compose exec sorosim-backend node dist/cli/index.js --help
+```
+
 ## API Documentation
 
 Interactive API documentation is available via Swagger UI when the server is running:

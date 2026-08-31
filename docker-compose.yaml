@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # SoroSim Backend API
+  sorosim-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sorosim-backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DEFAULT_NETWORK=local-quickstart
+      - SOROBAN_RPC_URL=http://stellar-quickstart:8000/soroban/rpc
+      - NETWORK_PASSPHRASE=Standalone Network ; February 2017
+    volumes:
+      - ./snapshots:/app/snapshots
+      - ./uploads:/app/uploads
+    depends_on:
+      stellar-quickstart:
+        condition: service_healthy
+    networks:
+      - sorosim-network
+    restart: unless-stopped
+
+  # Stellar Quickstart (Local RPC Node)
+  stellar-quickstart:
+    image: stellar/quickstart:latest
+    container_name: stellar-quickstart
+    command: --standalone --enable-soroban-rpc
+    ports:
+      - "8000:8000"  # Horizon API + Soroban RPC
+      - "11626:11626"  # Stellar Core peer port
+      - "11625:11625"  # Stellar Core HTTP port
+    environment:
+      - NETWORK_PASSPHRASE=Standalone Network ; February 2017
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - stellar-data:/opt/stellar
+    networks:
+      - sorosim-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  stellar-data:
+    driver: local
+
+networks:
+  sorosim-network:
+    driver: bridge
