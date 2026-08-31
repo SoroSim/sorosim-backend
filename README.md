@@ -89,6 +89,7 @@ sorosim ledger stats                # View ledger statistics
 sorosim ledger list                 # List all entries
 sorosim ledger list -t account      # Filter by type
 sorosim ledger clear --yes          # Clear all entries
+sorosim ledger seed ./state.json    # Seed from JSON file
 
 # Session management
 sorosim session list                # List all sessions

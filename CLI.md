@@ -117,6 +117,42 @@ sorosim ledger list --type account
 
 # Clear all entries (requires confirmation)
 sorosim ledger clear --yes
+
+# Seed ledger from a local JSON file
+sorosim ledger seed ./test-state.json
+
+# Seed and clear existing entries first
+sorosim ledger seed ./test-state.json --clear
+```
+
+**Ledger Seed Options:**
+- `-c, --clear` - Clear existing entries before loading
+
+**Seed File Format:**
+The seed file should be a JSON snapshot with the following structure:
+```json
+{
+  "version": "1.0",
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "ledgerSequence": 100,
+  "networkPassphrase": "Test SDF Network ; September 2015",
+  "entries": [
+    {
+      "type": "account",
+      "key": "account:GABC...",
+      "accountId": "GABC...",
+      "balance": "10000000000",
+      "sequence": "123456"
+    },
+    {
+      "type": "contractData",
+      "key": "contractData:CA3D5...:counter",
+      "contract": "CA3D5...",
+      "storageKey": "counter",
+      "value": "42"
+    }
+  ]
+}
 ```
 
 ### Session Management
@@ -181,6 +217,39 @@ sorosim snapshot export
 ```
 
 ## Examples
+
+### Seeding Ledger State from File
+
+```bash
+# Create a test state file
+cat > test-state.json << 'EOF'
+{
+  "version": "1.0",
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "ledgerSequence": 100,
+  "networkPassphrase": "Test SDF Network ; September 2015",
+  "entries": [
+    {
+      "type": "account",
+      "key": "account:GABC123...",
+      "accountId": "GABC123...",
+      "balance": "10000000000",
+      "sequence": "1"
+    }
+  ]
+}
+EOF
+
+# Seed ledger from file
+sorosim ledger seed test-state.json
+
+# Or clear existing state first
+sorosim ledger seed test-state.json --clear
+
+# Verify loaded
+sorosim ledger stats
+sorosim ledger list
+```
 
 ### Running a Simulation Workflow
 

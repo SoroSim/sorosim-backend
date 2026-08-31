@@ -1,6 +1,8 @@
 import { Command } from 'commander';
 import { createApiClient } from '../utils/api';
-import { success, error, json as printJson, table, keyValue } from '../utils/output';
+import { success, error, json as printJson, table, keyValue, spinner } from '../utils/output';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export const ledgerCommand = new Command('ledger')
   .description('Manage mock ledger state');
@@ -90,6 +92,68 @@ ledgerCommand
       await api.delete('/api/ledger/clear');
       success('All ledger entries cleared');
     } catch (err) {
+      error(err instanceof Error ? err.message : 'Unknown error');
+      process.exit(1);
+    }
+  });
+
+// Seed subcommand
+ledgerCommand
+  .command('seed <file>')
+  .description('Seed ledger state from a local JSON file')
+  .option('-c, --clear', 'Clear existing entries before loading')
+  .action(async (file, options, command) => {
+    const stop = spinner('Loading ledger state...');
+    
+    try {
+      const rootCmd = command.parent?.parent as Command;
+      const api = createApiClient(rootCmd.opts().url);
+      const jsonOutput = rootCmd.opts().json;
+
+      // Resolve file path
+      const filePath = path.resolve(file);
+
+      // Check if file exists
+      if (!fs.existsSync(filePath)) {
+        stop();
+        error(`File not found: ${filePath}`);
+        process.exit(1);
+      }
+
+      // Read and parse JSON file
+      let snapshot;
+      try {
+        const fileContent = fs.readFileSync(filePath, 'utf-8');
+        snapshot = JSON.parse(fileContent);
+      } catch (parseErr) {
+        stop();
+        error(`Failed to parse JSON file: ${parseErr instanceof Error ? parseErr.message : 'Invalid JSON'}`);
+        process.exit(1);
+      }
+
+      // Import snapshot
+      const requestBody = {
+        snapshot,
+        clearExisting: !!options.clear
+      };
+
+      const response = await api.post<any>('/api/snapshots/import', requestBody);
+      
+      stop();
+
+      if (jsonOutput) {
+        printJson(response);
+      } else {
+        success(`Ledger seeded from ${path.basename(filePath)}`);
+        console.log();
+        keyValue({
+          'Entries Loaded': response.data.entriesLoaded,
+          'Ledger Sequence': response.data.ledgerSequence,
+          'Snapshot Created': response.data.createdAt
+        });
+      }
+    } catch (err) {
+      stop();
       error(err instanceof Error ? err.message : 'Unknown error');
       process.exit(1);
     }
