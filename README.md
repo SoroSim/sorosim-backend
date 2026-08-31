@@ -35,6 +35,9 @@ cp .env.example .env
 
 # Run in development mode
 npm run dev
+
+# Access API documentation
+open http://localhost:3000/api-docs
 ```
 
 ### Build
@@ -160,6 +163,24 @@ sorosim snapshot export [file]      # Export to file or stdout
 ```
 
 For detailed CLI documentation, see [CLI.md](./CLI.md).
+
+## API Documentation
+
+Interactive API documentation is available via Swagger UI when the server is running:
+
+**http://localhost:3000/api-docs**
+
+The OpenAPI 3.0 specification is located in [`openapi.yaml`](./openapi.yaml) and includes:
+- Complete endpoint documentation
+- Request/response schemas
+- Example requests and responses
+- Parameter descriptions
+- Error responses
+
+You can also import `openapi.yaml` into tools like:
+- **Postman**: Import → OpenAPI 3.0
+- **Insomnia**: Import → From File
+- **SwaggerHub**: Import API → Upload File
 
 ## API Endpoints
 

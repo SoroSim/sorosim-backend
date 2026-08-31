@@ -1,0 +1,712 @@
+openapi: 3.0.3
+info:
+  title: SoroSim Backend API
+  description: |
+    Soroban Contract Simulation & Dry-Run Sandbox Backend - A REST API for simulating 
+    Soroban smart contract invocations with mock ledger state.
+    
+    ## Features
+    - Simulate Soroban contract invocations without testnet
+    - Mock ledger state management
+    - Session-based simulation history
+    - Network configuration management
+    - State diff tracking and analysis
+    - Event extraction and filtering
+    - Comprehensive reporting
+    
+  version: 1.0.0
+  contact:
+    name: SoroSim
+    url: https://github.com/YOUR_USERNAME/SoroSim-backend
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+  - url: https://api.sorosim.example.com
+    description: Production server (example)
+
+tags:
+  - name: General
+    description: General API information and health checks
+  - name: Simulation
+    description: Contract simulation endpoints
+  - name: Ledger
+    description: Mock ledger state management
+  - name: Accounts
+    description: Account entry management
+  - name: Contracts
+    description: Contract entry management
+  - name: Sessions
+    description: Simulation session management
+  - name: Snapshots
+    description: Ledger snapshot operations
+  - name: Networks
+    description: Network configuration
+  - name: State Diff
+    description: State difference calculation
+  - name: Events
+    description: Contract event extraction and filtering
+  - name: Reports
+    description: Simulation report generation
+  - name: XDR
+    description: XDR conversion utilities
+  - name: WASM
+    description: WASM file management
+
+paths:
+  /:
+    get:
+      tags:
+        - General
+      summary: Get API information
+      description: Returns basic API information and version
+      responses:
+        '200':
+          description: API information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    example: SoroSim Backend API
+                  version:
+                    type: string
+                    example: 1.0.0
+                  description:
+                    type: string
+
+  /health:
+    get:
+      tags:
+        - General
+      summary: Health check
+      description: Check API health and Soroban RPC connection status
+      responses:
+        '200':
+          description: Health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  rpc:
+                    type: object
+                    properties:
+                      connected:
+                        type: boolean
+                      network:
+                        type: string
+
+  /api/simulate:
+    post:
+      tags:
+        - Simulation
+      summary: Simulate contract invocation
+      description: Simulate a Soroban contract function call without submitting to the network
+      parameters:
+        - name: networkId
+          in: query
+          description: Network ID to use for simulation
+          schema:
+            type: string
+            example: testnet
+        - name: sessionId
+          in: query
+          description: Session ID to log invocation to
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - contractId
+                - method
+              properties:
+                contractId:
+                  type: string
+                  description: Contract address
+                  example: CA3D5KRYM6CB7OWQ6TWYRR3Z4T7GNZLKERYNZGGA5SOAOPIFY6YQGAXE
+                method:
+                  type: string
+                  description: Contract function name
+                  example: increment
+                args:
+                  type: array
+                  description: Function arguments
+                  items:
+                    type: object
+                  default: []
+                source:
+                  type: string
+                  description: Source account public key
+                  example: GABC123...
+                fee:
+                  type: string
+                  description: Transaction fee in stroops
+                  example: "1000"
+      responses:
+        '200':
+          description: Simulation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulationResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/ledger/stats:
+    get:
+      tags:
+        - Ledger
+      summary: Get ledger statistics
+      description: Returns statistics about the mock ledger store
+      responses:
+        '200':
+          description: Ledger statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      totalEntries:
+                        type: integer
+                      currentLedgerSeq:
+                        type: integer
+                      entriesByType:
+                        type: object
+
+  /api/ledger/entries:
+    get:
+      tags:
+        - Ledger
+      summary: Get all ledger entries
+      description: Returns all entries in the mock ledger
+      responses:
+        '200':
+          description: List of ledger entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LedgerEntry'
+    
+    post:
+      tags:
+        - Ledger
+      summary: Create or update ledger entry
+      description: Add or update a ledger entry in the mock store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LedgerEntry'
+      responses:
+        '201':
+          description: Entry created/updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/LedgerEntry'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/ledger/entries/{key}:
+    get:
+      tags:
+        - Ledger
+      summary: Get ledger entry by key
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+          example: account:GABC123
+      responses:
+        '200':
+          description: Ledger entry
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/LedgerEntry'
+        '404':
+          description: Entry not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put:
+      tags:
+        - Ledger
+      summary: Update ledger entry
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Entry updated
+        '404':
+          description: Entry not found
+    
+    delete:
+      tags:
+        - Ledger
+      summary: Delete ledger entry
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Entry deleted
+        '404':
+          description: Entry not found
+
+  /api/ledger/clear:
+    delete:
+      tags:
+        - Ledger
+      summary: Clear all ledger entries
+      description: Removes all entries from the mock ledger
+      responses:
+        '200':
+          description: All entries cleared
+
+  /api/sessions:
+    get:
+      tags:
+        - Sessions
+      summary: Get all sessions
+      responses:
+        '200':
+          description: List of sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Session'
+    
+    post:
+      tags:
+        - Sessions
+      summary: Create new session
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                networkPassphrase:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          description: Session created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Session'
+
+  /api/sessions/{sessionId}:
+    get:
+      tags:
+        - Sessions
+      summary: Get session by ID
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: includeHistory
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Session details
+        '404':
+          description: Session not found
+    
+    delete:
+      tags:
+        - Sessions
+      summary: Delete session
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session deleted
+        '404':
+          description: Session not found
+
+  /api/networks:
+    get:
+      tags:
+        - Networks
+      summary: Get all networks
+      responses:
+        '200':
+          description: List of networks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Network'
+    
+    post:
+      tags:
+        - Networks
+      summary: Add custom network
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+                - name
+                - rpcUrl
+                - networkPassphrase
+              properties:
+                id:
+                  type: string
+                name:
+                  type: string
+                rpcUrl:
+                  type: string
+                networkPassphrase:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Network added
+
+  /api/snapshots:
+    get:
+      tags:
+        - Snapshots
+      summary: List all snapshots
+      responses:
+        '200':
+          description: List of snapshot files
+
+  /api/snapshots/save:
+    post:
+      tags:
+        - Snapshots
+      summary: Save ledger snapshot to file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - filename
+              properties:
+                filename:
+                  type: string
+                networkPassphrase:
+                  type: string
+      responses:
+        '200':
+          description: Snapshot saved
+
+  /api/snapshots/load:
+    post:
+      tags:
+        - Snapshots
+      summary: Load snapshot from file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - filename
+              properties:
+                filename:
+                  type: string
+                clearExisting:
+                  type: boolean
+      responses:
+        '200':
+          description: Snapshot loaded
+
+  /api/snapshots/import:
+    post:
+      tags:
+        - Snapshots
+      summary: Import snapshot from JSON body
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - snapshot
+              properties:
+                snapshot:
+                  $ref: '#/components/schemas/Snapshot'
+                clearExisting:
+                  type: boolean
+      responses:
+        '200':
+          description: Snapshot imported
+
+  /api/wasm/upload:
+    post:
+      tags:
+        - WASM
+      summary: Upload WASM contract file
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                wasm:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: WASM uploaded and analyzed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      filename:
+                        type: string
+                      size:
+                        type: integer
+                      hash:
+                        type: string
+                      uploadedAt:
+                        type: string
+                        format: date-time
+                      abi:
+                        type: object
+
+components:
+  schemas:
+    SimulationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            success:
+              type: boolean
+            result:
+              type: object
+            events:
+              type: array
+              items:
+                type: object
+            stateDiff:
+              type: object
+        requestId:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        duration:
+          type: integer
+          description: Duration in milliseconds
+        sessionId:
+          type: string
+          format: uuid
+    
+    LedgerEntry:
+      type: object
+      required:
+        - type
+        - key
+      properties:
+        type:
+          type: string
+          enum: [account, contractData, contractCode, trustline]
+        key:
+          type: string
+        lastModifiedLedgerSeq:
+          type: integer
+    
+    Session:
+      type: object
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        lastActivityAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [active, idle, closed]
+        invocationCount:
+          type: integer
+        metadata:
+          type: object
+    
+    Network:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [testnet, futurenet, mainnet, custom]
+        rpcUrl:
+          type: string
+        networkPassphrase:
+          type: string
+        description:
+          type: string
+        isDefault:
+          type: boolean
+    
+    Snapshot:
+      type: object
+      properties:
+        version:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        ledgerSequence:
+          type: integer
+        networkPassphrase:
+          type: string
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/LedgerEntry'
+    
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Error message
+        details:
+          type: object
+          description: Additional error details

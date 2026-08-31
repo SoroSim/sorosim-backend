@@ -2,6 +2,9 @@ import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import multer from 'multer';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
+import * as path from 'path';
 import { SorobanClient } from './engine';
 import wasmRoutes from './routes/wasmRoutes';
 import ledgerRoutes from './routes/ledgerRoutes';
@@ -24,10 +27,20 @@ const PORT = process.env.PORT || 3000;
 // Initialize Soroban client
 const sorobanClient = new SorobanClient();
 
+// Load OpenAPI specification
+const openApiPath = path.join(__dirname, '..', 'openapi.yaml');
+const swaggerDocument = YAML.load(openApiPath);
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
+  customSiteTitle: 'SoroSim API Documentation',
+  customCss: '.swagger-ui .topbar { display: none }',
+}));
 
 // Routes
 app.use('/api/wasm', wasmRoutes);
@@ -116,7 +129,8 @@ app.get('/', (_req: Request, res: Response) => {
   res.json({
     name: 'SoroSim Backend',
     version: '1.0.0',
-    description: 'Soroban Contract Simulation & Dry-Run Sandbox'
+    description: 'Soroban Contract Simulation & Dry-Run Sandbox',
+    documentation: '/api-docs'
   });
 });
 
@@ -124,6 +138,7 @@ app.get('/', (_req: Request, res: Response) => {
 app.listen(PORT, () => {
   console.log(`🚀 SoroSim Backend running on port ${PORT}`);
   console.log(`📍 Health check: http://localhost:${PORT}/health`);
+  console.log(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
 });
 
 export default app;
