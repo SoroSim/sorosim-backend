@@ -47,6 +47,19 @@ npm start
 npm run lint
 ```
 
+### Test
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
+```
+
 ## CLI Tool
 
 SoroSim includes a companion CLI tool for interacting with the backend from the command line.
