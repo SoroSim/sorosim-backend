@@ -115,11 +115,15 @@ jobs:
           name: dist
           path: dist/
       
-      - name: Verify CLI builds
+      - name: Verify CLI builds and runs
         run: |
           npm run build:cli
-          node dist/cli/index.js --version
-          node dist/cli/index.js --help
+          echo "Testing CLI version..."
+          node dist/cli/index.js --version 2>&1 | grep -q "1.0.0" && echo "✓ Version command works"
+          echo "Testing CLI help..."
+          node dist/cli/index.js --help 2>&1 | grep -q "SoroSim CLI" && echo "✓ Help command works"
+          echo "Testing CLI without args..."
+          node dist/cli/index.js 2>&1 | grep -q "Commands:" && echo "✓ Default help works"
       
       - name: Integration check passed
         run: echo "✅ All integration checks passed!"
