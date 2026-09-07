@@ -13,6 +13,12 @@ import {
   readLimiter, 
   uploadLimiter 
 } from './middleware/rateLimiter';
+import { 
+  correlationIdMiddleware, 
+  httpLogger, 
+  requestCompletionLogger 
+} from './middleware/requestLogger';
+import { logger } from './config/logger';
 import wasmRoutes from './routes/wasmRoutes';
 import ledgerRoutes from './routes/ledgerRoutes';
 import simulationRoutes from './routes/simulationRoutes';
@@ -43,6 +49,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Request logging middleware (must be early in the chain)
+app.use(correlationIdMiddleware);
+app.use(httpLogger);
+app.use(requestCompletionLogger);
+
 // API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
   customSiteTitle: 'SoroSim API Documentation',
@@ -64,7 +75,16 @@ app.use('/api/reports', readLimiter, reportRoutes);
 app.use('/api/xdr', generalLimiter, xdrRoutes);
 
 // Error handling middleware
-app.use((err: Error, _req: Request, res: Response, _next: express.NextFunction) => {
+app.use((err: Error, req: Request, res: Response, _next: express.NextFunction) => {
+  // Log error with correlation ID
+  logger.error('Request error', {
+    correlationId: req.correlationId,
+    error: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+    path: req.path,
+    method: req.method
+  });
+
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
       res.status(400).json({
@@ -143,6 +163,9 @@ app.get('/', (_req: Request, res: Response) => {
 
 // Start server
 app.listen(PORT, () => {
+  logger.info(`🚀 SoroSim Backend running on port ${PORT}`);
+  logger.info(`📍 Health check: http://localhost:${PORT}/health`);
+  logger.info(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
   console.log(`🚀 SoroSim Backend running on port ${PORT}`);
   console.log(`📍 Health check: http://localhost:${PORT}/health`);
   console.log(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
