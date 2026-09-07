@@ -36,9 +36,9 @@ export const createSession = (req: Request, res: Response): void => {
  */
 export const getAllSessions = (req: Request, res: Response): void => {
   try {
-    const { page, limit } = req.query;
+    const { page, limit, includeDeleted } = req.query;
     const store = getSessionStore();
-    const sessions = store.getAllSessions();
+    const sessions = store.getAllSessions(includeDeleted === 'true');
     
     // Parse pagination params
     const paginationParams = parsePaginationParams(page as string, limit as string);
@@ -249,13 +249,79 @@ export const deleteSession = (req: Request, res: Response): void => {
     
     res.status(200).json({
       success: true,
-      message: 'Session deleted successfully',
+      message: 'Session soft deleted successfully',
       sessionId
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Failed to delete session',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+/**
+ * Restore a soft-deleted session
+ */
+export const restoreSession = (req: Request, res: Response): void => {
+  try {
+    const { sessionId } = req.params;
+    
+    const store = getSessionStore();
+    const session = store.restoreSession(sessionId);
+    
+    if (!session) {
+      res.status(404).json({
+        success: false,
+        message: 'Session not found or not deleted',
+        sessionId
+      });
+      return;
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: 'Session restored successfully',
+      data: session
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to restore session',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+/**
+ * Permanently delete a session (hard delete)
+ */
+export const hardDeleteSession = (req: Request, res: Response): void => {
+  try {
+    const { sessionId } = req.params;
+    
+    const store = getSessionStore();
+    const deleted = store.hardDeleteSession(sessionId);
+    
+    if (!deleted) {
+      res.status(404).json({
+        success: false,
+        message: 'Session not found',
+        sessionId
+      });
+      return;
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: 'Session permanently deleted',
+      sessionId
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to permanently delete session',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }

@@ -7,6 +7,8 @@ import {
   updateSessionStatus,
   updateSessionMetadata,
   deleteSession,
+  restoreSession,
+  hardDeleteSession,
   getSessionInvocations,
   cleanupSessions,
   exportSessionHistory,
@@ -75,9 +77,21 @@ router.put('/:sessionId/metadata', validate(updateSessionMetadataValidation), up
 
 /**
  * DELETE /api/sessions/:sessionId
- * Delete a session
+ * Soft delete a session
  */
 router.delete('/:sessionId', validate(uuidParamValidation('sessionId')), deleteSession);
+
+/**
+ * POST /api/sessions/:sessionId/restore
+ * Restore a soft-deleted session
+ */
+router.post('/:sessionId/restore', validate(uuidParamValidation('sessionId')), restoreSession);
+
+/**
+ * DELETE /api/sessions/:sessionId/permanent
+ * Permanently delete a session (hard delete)
+ */
+router.delete('/:sessionId/permanent', validate(uuidParamValidation('sessionId')), hardDeleteSession);
 
 /**
  * GET /api/sessions/:sessionId/invocations
