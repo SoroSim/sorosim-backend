@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { getMockLedgerStore } from '../store/mockLedgerStore';
 import { LedgerEntry, LedgerEntryType } from '../types/ledger';
 import { validateLedgerEntry } from '../utils/ledgerValidation';
+import { parsePaginationParams, createPaginatedResponse } from '../utils/pagination';
 
 /**
  * Ledger store management controller
@@ -31,15 +32,27 @@ export const getStats = (_req: Request, res: Response): void => {
 /**
  * Get all ledger entries
  */
-export const getAllEntries = (_req: Request, res: Response): void => {
+export const getAllEntries = (req: Request, res: Response): void => {
   try {
+    const { page, limit } = req.query;
     const store = getMockLedgerStore();
     const entries = store.getAll();
 
+    // Parse pagination params
+    const paginationParams = parsePaginationParams(page as string, limit as string);
+    
+    // Create paginated response
+    const { data, metadata } = createPaginatedResponse(
+      entries,
+      paginationParams.page,
+      paginationParams.limit
+    );
+
     res.status(200).json({
       success: true,
-      count: entries.length,
-      data: entries
+      count: data.length,
+      data,
+      pagination: metadata
     });
   } catch (error) {
     res.status(500).json({
@@ -56,6 +69,7 @@ export const getAllEntries = (_req: Request, res: Response): void => {
 export const getEntriesByType = (req: Request, res: Response): void => {
   try {
     const { type } = req.params;
+    const { page, limit } = req.query;
     
     // Validate type
     if (!Object.values(LedgerEntryType).includes(type as LedgerEntryType)) {
@@ -70,10 +84,21 @@ export const getEntriesByType = (req: Request, res: Response): void => {
     const store = getMockLedgerStore();
     const entries = store.getByType(type as LedgerEntryType);
 
+    // Parse pagination params
+    const paginationParams = parsePaginationParams(page as string, limit as string);
+    
+    // Create paginated response
+    const { data, metadata } = createPaginatedResponse(
+      entries,
+      paginationParams.page,
+      paginationParams.limit
+    );
+
     res.status(200).json({
       success: true,
-      count: entries.length,
-      data: entries
+      count: data.length,
+      data,
+      pagination: metadata
     });
   } catch (error) {
     res.status(500).json({
