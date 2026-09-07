@@ -6,6 +6,13 @@ import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import * as path from 'path';
 import { SorobanClient } from './engine';
+import { 
+  generalLimiter, 
+  simulationLimiter, 
+  ledgerLimiter, 
+  readLimiter, 
+  uploadLimiter 
+} from './middleware/rateLimiter';
 import wasmRoutes from './routes/wasmRoutes';
 import ledgerRoutes from './routes/ledgerRoutes';
 import simulationRoutes from './routes/simulationRoutes';
@@ -42,19 +49,19 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
   customCss: '.swagger-ui .topbar { display: none }',
 }));
 
-// Routes
-app.use('/api/wasm', wasmRoutes);
-app.use('/api/ledger', ledgerRoutes);
-app.use('/api/simulate', simulationRoutes);
-app.use('/api/accounts', accountRoutes);
-app.use('/api/contracts', contractRoutes);
-app.use('/api/snapshots', snapshotRoutes);
-app.use('/api/sessions', sessionRoutes);
-app.use('/api/networks', networkRoutes);
-app.use('/api/diff', diffRoutes);
-app.use('/api/events', eventRoutes);
-app.use('/api/reports', reportRoutes);
-app.use('/api/xdr', xdrRoutes);
+// Routes with rate limiting
+app.use('/api/wasm', uploadLimiter, wasmRoutes);
+app.use('/api/ledger', ledgerLimiter, ledgerRoutes);
+app.use('/api/simulate', simulationLimiter, simulationRoutes);
+app.use('/api/accounts', readLimiter, accountRoutes);
+app.use('/api/contracts', generalLimiter, contractRoutes);
+app.use('/api/snapshots', generalLimiter, snapshotRoutes);
+app.use('/api/sessions', generalLimiter, sessionRoutes);
+app.use('/api/networks', readLimiter, networkRoutes);
+app.use('/api/diff', readLimiter, diffRoutes);
+app.use('/api/events', readLimiter, eventRoutes);
+app.use('/api/reports', readLimiter, reportRoutes);
+app.use('/api/xdr', generalLimiter, xdrRoutes);
 
 // Error handling middleware
 app.use((err: Error, _req: Request, res: Response, _next: express.NextFunction) => {
