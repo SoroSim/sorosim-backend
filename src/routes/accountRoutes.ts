@@ -5,6 +5,8 @@ import {
   createOrUpdateAccount,
   createAccountWithDefaults
 } from '../controllers/accountController';
+import { createAccountValidation } from '../middleware/validationSchemas';
+import { validate } from '../middleware/validator';
 
 const router = Router();
 
@@ -24,7 +26,7 @@ router.get('/:accountId', getAccountById);
  * POST /api/accounts
  * Create or update an account entry
  */
-router.post('/', createOrUpdateAccount);
+router.post('/', validate(createAccountValidation), createOrUpdateAccount);
 
 /**
  * POST /api/accounts/defaults

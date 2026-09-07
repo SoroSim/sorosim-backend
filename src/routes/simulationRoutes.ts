@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { simulateInvocation } from '../controllers/simulationController';
+import { simulationValidation } from '../middleware/validationSchemas';
+import { validate } from '../middleware/validator';
 
 const router = Router();
 
@@ -14,6 +16,6 @@ const router = Router();
  * @body fee - Transaction fee in stroops (optional)
  * @returns Simulation result
  */
-router.post('/', simulateInvocation);
+router.post('/', validate(simulationValidation), simulateInvocation);
 
 export default router;

@@ -7,6 +7,8 @@ import {
   addNetwork,
   deleteNetwork
 } from '../controllers/networkController';
+import { networkConfigValidation } from '../middleware/validationSchemas';
+import { validate } from '../middleware/validator';
 
 const router = Router();
 
@@ -27,7 +29,7 @@ router.get('/:id', getNetworkById);
 router.put('/default/:id', setDefaultNetwork);
 
 // POST /api/networks - Add or update custom network
-router.post('/', addNetwork);
+router.post('/', validate(networkConfigValidation), addNetwork);
 
 // DELETE /api/networks/:id - Delete a network
 router.delete('/:id', deleteNetwork);

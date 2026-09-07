@@ -8,6 +8,8 @@ import {
   deleteSnapshot,
   exportSnapshot
 } from '../controllers/snapshotController';
+import { createSnapshotValidation } from '../middleware/validationSchemas';
+import { validate } from '../middleware/validator';
 
 const router = Router();
 
@@ -21,13 +23,13 @@ router.get('/', listSnapshots);
  * POST /api/snapshots/create
  * Create a snapshot of current ledger state (returns JSON)
  */
-router.post('/create', createSnapshot);
+router.post('/create', validate(createSnapshotValidation), createSnapshot);
 
 /**
  * POST /api/snapshots/save
  * Save current ledger state to file
  */
-router.post('/save', saveSnapshot);
+router.post('/save', validate(createSnapshotValidation), saveSnapshot);
 
 /**
  * POST /api/snapshots/load
