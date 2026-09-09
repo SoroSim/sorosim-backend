@@ -12,6 +12,8 @@ import {
   setLedgerSeq,
   incrementLedgerSeq
 } from '../controllers/ledgerController';
+import { createLedgerEntryValidation, paginationValidation } from '../middleware/validationSchemas';
+import { validate } from '../middleware/validator';
 
 const router = Router();
 
@@ -25,13 +27,13 @@ router.get('/stats', getStats);
  * GET /api/ledger/entries
  * Get all ledger entries
  */
-router.get('/entries', getAllEntries);
+router.get('/entries', validate(paginationValidation), getAllEntries);
 
 /**
  * GET /api/ledger/entries/type/:type
  * Get ledger entries by type
  */
-router.get('/entries/type/:type', getEntriesByType);
+router.get('/entries/type/:type', validate(paginationValidation), getEntriesByType);
 
 /**
  * GET /api/ledger/entries/:key
@@ -43,13 +45,13 @@ router.get('/entries/:key', getEntry);
  * POST /api/ledger/entries
  * Create or update a ledger entry
  */
-router.post('/entries', createOrUpdateEntry);
+router.post('/entries', validate(createLedgerEntryValidation), createOrUpdateEntry);
 
 /**
  * PUT /api/ledger/entries/:key
  * Update an existing ledger entry
  */
-router.put('/entries/:key', updateEntry);
+router.put('/entries/:key', validate(createLedgerEntryValidation), updateEntry);
 
 /**
  * DELETE /api/ledger/entries/:key

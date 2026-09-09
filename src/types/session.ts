@@ -42,6 +42,7 @@ export interface SimulationSession {
     [key: string]: unknown;
   };
   invocationCount: number;
+  deletedAt?: string; // Soft delete timestamp
 }
 
 /**
@@ -72,4 +73,5 @@ export interface SessionSummary {
   status: SessionStatus;
   invocationCount: number;
   name?: string;
+  deletedAt?: string; // Soft delete timestamp
 }

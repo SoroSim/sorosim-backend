@@ -6,6 +6,19 @@ import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import * as path from 'path';
 import { SorobanClient } from './engine';
+import { 
+  generalLimiter, 
+  simulationLimiter, 
+  ledgerLimiter, 
+  readLimiter, 
+  uploadLimiter 
+} from './middleware/rateLimiter';
+import { 
+  correlationIdMiddleware, 
+  httpLogger, 
+  requestCompletionLogger 
+} from './middleware/requestLogger';
+import { logger } from './config/logger';
 import wasmRoutes from './routes/wasmRoutes';
 import ledgerRoutes from './routes/ledgerRoutes';
 import simulationRoutes from './routes/simulationRoutes';
@@ -36,28 +49,42 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Request logging middleware (must be early in the chain)
+app.use(correlationIdMiddleware);
+app.use(httpLogger);
+app.use(requestCompletionLogger);
+
 // API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
   customSiteTitle: 'SoroSim API Documentation',
   customCss: '.swagger-ui .topbar { display: none }',
 }));
 
-// Routes
-app.use('/api/wasm', wasmRoutes);
-app.use('/api/ledger', ledgerRoutes);
-app.use('/api/simulate', simulationRoutes);
-app.use('/api/accounts', accountRoutes);
-app.use('/api/contracts', contractRoutes);
-app.use('/api/snapshots', snapshotRoutes);
-app.use('/api/sessions', sessionRoutes);
-app.use('/api/networks', networkRoutes);
-app.use('/api/diff', diffRoutes);
-app.use('/api/events', eventRoutes);
-app.use('/api/reports', reportRoutes);
-app.use('/api/xdr', xdrRoutes);
+// Routes with rate limiting
+app.use('/api/wasm', uploadLimiter, wasmRoutes);
+app.use('/api/ledger', ledgerLimiter, ledgerRoutes);
+app.use('/api/simulate', simulationLimiter, simulationRoutes);
+app.use('/api/accounts', readLimiter, accountRoutes);
+app.use('/api/contracts', generalLimiter, contractRoutes);
+app.use('/api/snapshots', generalLimiter, snapshotRoutes);
+app.use('/api/sessions', generalLimiter, sessionRoutes);
+app.use('/api/networks', readLimiter, networkRoutes);
+app.use('/api/diff', readLimiter, diffRoutes);
+app.use('/api/events', readLimiter, eventRoutes);
+app.use('/api/reports', readLimiter, reportRoutes);
+app.use('/api/xdr', generalLimiter, xdrRoutes);
 
 // Error handling middleware
-app.use((err: Error, _req: Request, res: Response, _next: express.NextFunction) => {
+app.use((err: Error, req: Request, res: Response, _next: express.NextFunction) => {
+  // Log error with correlation ID
+  logger.error('Request error', {
+    correlationId: req.correlationId,
+    error: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+    path: req.path,
+    method: req.method
+  });
+
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
       res.status(400).json({
@@ -136,6 +163,9 @@ app.get('/', (_req: Request, res: Response) => {
 
 // Start server
 app.listen(PORT, () => {
+  logger.info(`🚀 SoroSim Backend running on port ${PORT}`);
+  logger.info(`📍 Health check: http://localhost:${PORT}/health`);
+  logger.info(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
   console.log(`🚀 SoroSim Backend running on port ${PORT}`);
   console.log(`📍 Health check: http://localhost:${PORT}/health`);
   console.log(`📚 API Documentation: http://localhost:${PORT}/api-docs`);

@@ -84,26 +84,32 @@ export class SessionStore {
   /**
    * Get all sessions (summaries only)
    * 
+   * @param includeDeleted - Whether to include soft-deleted sessions
    * @returns Array of session summaries
    */
-  getAllSessions(): SessionSummary[] {
-    return Array.from(this.sessions.values()).map(session => ({
-      sessionId: session.sessionId,
-      createdAt: session.createdAt,
-      lastActivityAt: session.lastActivityAt,
-      status: session.status,
-      invocationCount: session.invocationCount,
-      name: session.metadata?.name as string | undefined
-    }));
+  getAllSessions(includeDeleted = false): SessionSummary[] {
+    return Array.from(this.sessions.values())
+      .filter(session => includeDeleted || !session.deletedAt)
+      .map(session => ({
+        sessionId: session.sessionId,
+        createdAt: session.createdAt,
+        lastActivityAt: session.lastActivityAt,
+        status: session.status,
+        invocationCount: session.invocationCount,
+        name: session.metadata?.name as string | undefined,
+        deletedAt: session.deletedAt
+      }));
   }
 
   /**
    * Get active sessions
    * 
-   * @returns Array of active sessions
+   * @returns Array of active sessions (excludes soft-deleted)
    */
   getActiveSessions(): SessionSummary[] {
-    return this.getAllSessions().filter(s => s.status === SessionStatus.ACTIVE);
+    return this.getAllSessions().filter(s => 
+      s.status === SessionStatus.ACTIVE && !s.deletedAt
+    );
   }
 
   /**
@@ -179,15 +185,57 @@ export class SessionStore {
   }
 
   /**
-   * Delete a session and its history
+   * Soft delete a session (mark as deleted without removing)
    * 
    * @param sessionId - Session ID
-   * @returns True if deleted
+   * @returns True if soft deleted
    */
   deleteSession(sessionId: string): boolean {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      return false;
+    }
+
+    // Soft delete: set deletedAt timestamp
+    session.deletedAt = new Date().toISOString();
+    session.status = SessionStatus.CLOSED;
+    this.sessions.set(sessionId, session);
+
+    return true;
+  }
+
+  /**
+   * Hard delete a session and its history (permanently remove)
+   * 
+   * @param sessionId - Session ID
+   * @returns True if hard deleted
+   */
+  hardDeleteSession(sessionId: string): boolean {
     const deleted = this.sessions.delete(sessionId);
     this.invocations.delete(sessionId);
     return deleted;
+  }
+
+  /**
+   * Restore a soft-deleted session
+   * 
+   * @param sessionId - Session ID
+   * @returns Restored session or undefined
+   */
+  restoreSession(sessionId: string): SimulationSession | undefined {
+    const session = this.sessions.get(sessionId);
+    if (!session || !session.deletedAt) {
+      return undefined;
+    }
+
+    // Remove deletedAt timestamp
+    delete session.deletedAt;
+    session.status = SessionStatus.IDLE;
+    session.lastActivityAt = new Date().toISOString();
+
+    this.sessions.set(sessionId, session);
+
+    return session;
   }
 
   /**
@@ -257,12 +305,32 @@ export class SessionStore {
 
     for (const [sessionId, session] of this.sessions.entries()) {
       if (session.status === SessionStatus.IDLE && session.lastActivityAt < cutoffTime) {
-        this.deleteSession(sessionId);
+        this.deleteSession(sessionId); // Soft delete
         cleanedCount++;
       }
     }
 
     return cleanedCount;
+  }
+
+  /**
+   * Permanently remove soft-deleted sessions older than specified age
+   * 
+   * @param maxAgeMinutes - Maximum age in minutes for deleted sessions
+   * @returns Number of sessions permanently removed
+   */
+  purgeDeletedSessions(maxAgeMinutes: number): number {
+    const cutoffTime = new Date(Date.now() - maxAgeMinutes * 60 * 1000).toISOString();
+    let purgedCount = 0;
+
+    for (const [sessionId, session] of this.sessions.entries()) {
+      if (session.deletedAt && session.deletedAt < cutoffTime) {
+        this.hardDeleteSession(sessionId);
+        purgedCount++;
+      }
+    }
+
+    return purgedCount;
   }
 }
 

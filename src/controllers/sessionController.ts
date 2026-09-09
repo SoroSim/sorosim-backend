@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { getSessionStore } from '../store/sessionStore';
 import { CreateSessionOptions, SessionStatus } from '../types/session';
+import { parsePaginationParams, createPaginatedResponse } from '../utils/pagination';
 
 /**
  * Session management controller
@@ -33,15 +34,27 @@ export const createSession = (req: Request, res: Response): void => {
 /**
  * Get all sessions
  */
-export const getAllSessions = (_req: Request, res: Response): void => {
+export const getAllSessions = (req: Request, res: Response): void => {
   try {
+    const { page, limit, includeDeleted } = req.query;
     const store = getSessionStore();
-    const sessions = store.getAllSessions();
+    const sessions = store.getAllSessions(includeDeleted === 'true');
+    
+    // Parse pagination params
+    const paginationParams = parsePaginationParams(page as string, limit as string);
+    
+    // Create paginated response
+    const { data, metadata } = createPaginatedResponse(
+      sessions,
+      paginationParams.page,
+      paginationParams.limit
+    );
     
     res.status(200).json({
       success: true,
-      count: sessions.length,
-      data: sessions
+      count: data.length,
+      data,
+      pagination: metadata
     });
   } catch (error) {
     res.status(500).json({
@@ -55,15 +68,27 @@ export const getAllSessions = (_req: Request, res: Response): void => {
 /**
  * Get active sessions
  */
-export const getActiveSessions = (_req: Request, res: Response): void => {
+export const getActiveSessions = (req: Request, res: Response): void => {
   try {
+    const { page, limit } = req.query;
     const store = getSessionStore();
     const sessions = store.getActiveSessions();
     
+    // Parse pagination params
+    const paginationParams = parsePaginationParams(page as string, limit as string);
+    
+    // Create paginated response
+    const { data, metadata } = createPaginatedResponse(
+      sessions,
+      paginationParams.page,
+      paginationParams.limit
+    );
+    
     res.status(200).json({
       success: true,
-      count: sessions.length,
-      data: sessions
+      count: data.length,
+      data,
+      pagination: metadata
     });
   } catch (error) {
     res.status(500).json({
@@ -224,7 +249,7 @@ export const deleteSession = (req: Request, res: Response): void => {
     
     res.status(200).json({
       success: true,
-      message: 'Session deleted successfully',
+      message: 'Session soft deleted successfully',
       sessionId
     });
   } catch (error) {
@@ -237,12 +262,78 @@ export const deleteSession = (req: Request, res: Response): void => {
 };
 
 /**
+ * Restore a soft-deleted session
+ */
+export const restoreSession = (req: Request, res: Response): void => {
+  try {
+    const { sessionId } = req.params;
+    
+    const store = getSessionStore();
+    const session = store.restoreSession(sessionId);
+    
+    if (!session) {
+      res.status(404).json({
+        success: false,
+        message: 'Session not found or not deleted',
+        sessionId
+      });
+      return;
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: 'Session restored successfully',
+      data: session
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to restore session',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+/**
+ * Permanently delete a session (hard delete)
+ */
+export const hardDeleteSession = (req: Request, res: Response): void => {
+  try {
+    const { sessionId } = req.params;
+    
+    const store = getSessionStore();
+    const deleted = store.hardDeleteSession(sessionId);
+    
+    if (!deleted) {
+      res.status(404).json({
+        success: false,
+        message: 'Session not found',
+        sessionId
+      });
+      return;
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: 'Session permanently deleted',
+      sessionId
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to permanently delete session',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+/**
  * Get session invocations
  */
 export const getSessionInvocations = (req: Request, res: Response): void => {
   try {
     const { sessionId } = req.params;
-    const { limit } = req.query;
+    const { page, limit: queryLimit } = req.query;
     
     const store = getSessionStore();
     
@@ -255,15 +346,24 @@ export const getSessionInvocations = (req: Request, res: Response): void => {
       return;
     }
     
-    const invocations = store.getInvocations(
-      sessionId, 
-      limit ? parseInt(limit as string, 10) : undefined
+    // Get all invocations
+    const allInvocations = store.getInvocations(sessionId);
+    
+    // Parse pagination params
+    const paginationParams = parsePaginationParams(page as string, queryLimit as string);
+    
+    // Create paginated response
+    const { data, metadata } = createPaginatedResponse(
+      allInvocations,
+      paginationParams.page,
+      paginationParams.limit
     );
     
     res.status(200).json({
       success: true,
-      count: invocations.length,
-      data: invocations
+      count: data.length,
+      data,
+      pagination: metadata
     });
   } catch (error) {
     res.status(500).json({
