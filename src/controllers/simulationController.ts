@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { SorobanClient } from '../engine/sorobanClient';
 import { SimulationService } from '../services/simulationService';
+import { getCacheService } from '../services/cacheService';
 import { SimulationRequest, SimulationResponse } from '../types/simulation';
 import { getSessionStore } from '../store/sessionStore';
 import { getNetworkStore } from '../store/networkStore';
@@ -55,8 +56,8 @@ export const simulateInvocation = async (req: Request, res: Response): Promise<v
     }
 
     // Validate network if provided
+    const networkStore = getNetworkStore();
     if (networkId && typeof networkId === 'string') {
-      const networkStore = getNetworkStore();
       if (!networkStore.hasNetwork(networkId)) {
         res.status(400).json({
           success: false,
@@ -71,13 +72,49 @@ export const simulateInvocation = async (req: Request, res: Response): Promise<v
     const requestId = uuidv4();
     const timestamp = new Date().toISOString();
 
-    // Execute simulation with specified or default network
-    const service = getSimulationService(networkId as string | undefined);
-    const result = await service.simulateInvocation(requestBody);
+    // Check if caching is enabled
+    const cacheEnabled = process.env.CACHE_ENABLED !== 'false';
+    const cacheService = getCacheService();
+    
+    // Get network for cache key
+    const network = networkId 
+      ? networkStore.getNetwork(networkId as string) || networkStore.getDefaultNetwork()
+      : networkStore.getDefaultNetwork();
 
-    // Add state diff if simulation was successful
-    if (result.success && !result.error) {
-      result.stateDiff = service.getStateDiff(result);
+    // Generate cache key
+    const cacheKey = cacheService.generateKey(
+      requestBody.contractId,
+      requestBody.method,
+      requestBody.args || [],
+      network.networkPassphrase
+    );
+
+    // Check cache for existing result
+    let result;
+    let cacheHit = false;
+    
+    if (cacheEnabled) {
+      const cachedResult = cacheService.get(cacheKey);
+      if (cachedResult) {
+        result = cachedResult;
+        cacheHit = true;
+      }
+    }
+
+    // If no cache hit, execute simulation
+    if (!result) {
+      const service = getSimulationService(networkId as string | undefined);
+      result = await service.simulateInvocation(requestBody);
+
+      // Add state diff if simulation was successful
+      if (result.success && !result.error) {
+        result.stateDiff = service.getStateDiff(result);
+      }
+
+      // Cache successful results
+      if (cacheEnabled && result.success) {
+        cacheService.set(cacheKey, result);
+      }
     }
 
     // Calculate duration
@@ -100,6 +137,9 @@ export const simulateInvocation = async (req: Request, res: Response): Promise<v
       }
     }
 
+    // Set cache status header
+    res.setHeader('X-Cache-Status', cacheHit ? 'HIT' : 'MISS');
+
     // Return result
     if (result.success) {
       res.status(200).json({
@@ -109,7 +149,8 @@ export const simulateInvocation = async (req: Request, res: Response): Promise<v
         requestId,
         timestamp,
         duration,
-        sessionId: sessionId as string | undefined
+        sessionId: sessionId as string | undefined,
+        cached: cacheHit
       } as SimulationResponse);
     } else {
       res.status(400).json({
@@ -118,7 +159,8 @@ export const simulateInvocation = async (req: Request, res: Response): Promise<v
         error: result.error,
         requestId,
         timestamp,
-        duration
+        duration,
+        cached: cacheHit
       } as SimulationResponse);
     }
   } catch (error) {
