@@ -3,6 +3,7 @@ import { getMockLedgerStore } from '../store/mockLedgerStore';
 import { LedgerEntry, LedgerEntryType } from '../types/ledger';
 import { validateLedgerEntry } from '../utils/ledgerValidation';
 import { parsePaginationParams, createPaginatedResponse } from '../utils/pagination';
+import { StellarExportService } from '../services/stellarExportService';
 
 /**
  * Ledger store management controller
@@ -370,6 +371,27 @@ export const incrementLedgerSeq = (_req: Request, res: Response): void => {
     res.status(500).json({
       success: false,
       message: 'Failed to increment ledger sequence',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+/**
+ * Export ledger state in Stellar account JSON format
+ */
+export const exportStellarFormat = (_req: Request, res: Response): void => {
+  try {
+    const exportService = new StellarExportService();
+    const stellarExport = exportService.exportLedgerState();
+
+    res.status(200).json({
+      success: true,
+      data: stellarExport
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to export ledger in Stellar format',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
