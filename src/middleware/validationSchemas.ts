@@ -250,3 +250,61 @@ export const paginationValidation = [
     .withMessage('Limit must be between 1 and 100')
     .toInt()
 ];
+
+/**
+ * Bulk ledger entries creation validation
+ */
+export const bulkCreateLedgerEntriesValidation = [
+  body('entries')
+    .notEmpty()
+    .withMessage('Entries array is required')
+    .isArray({ min: 1, max: 100 })
+    .withMessage('Entries must be an array with 1 to 100 items'),
+  body('entries.*.type')
+    .notEmpty()
+    .withMessage('Each entry must have a type')
+    .isIn(['account', 'contractData', 'contractCode', 'trustline', 'data', 'offer', 'claimableBalance', 'liquidityPool', 'configSetting', 'ttl'])
+    .withMessage('Invalid ledger entry type'),
+  body('validateOnly')
+    .optional()
+    .isBoolean()
+    .withMessage('validateOnly must be a boolean')
+];
+
+/**
+ * Session list query validation with search and filters
+ */
+export const sessionListValidation = [
+  query('page')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Page must be a positive integer')
+    .toInt(),
+  query('limit')
+    .optional()
+    .isInt({ min: 1, max: 100 })
+    .withMessage('Limit must be between 1 and 100')
+    .toInt(),
+  query('search')
+    .optional()
+    .isString()
+    .withMessage('Search must be a string')
+    .trim(),
+  query('status')
+    .optional()
+    .isIn(['active', 'idle', 'closed'])
+    .withMessage('Status must be one of: active, idle, closed'),
+  query('tags')
+    .optional()
+    .isString()
+    .withMessage('Tags must be a comma-separated string')
+    .trim(),
+  query('startDate')
+    .optional()
+    .isISO8601()
+    .withMessage('Start date must be a valid ISO 8601 date'),
+  query('endDate')
+    .optional()
+    .isISO8601()
+    .withMessage('End date must be a valid ISO 8601 date')
+];

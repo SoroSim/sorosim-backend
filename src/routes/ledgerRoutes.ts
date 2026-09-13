@@ -10,9 +10,15 @@ import {
   clearStore,
   getLedgerSeq,
   setLedgerSeq,
-  incrementLedgerSeq
+  incrementLedgerSeq,
+  exportStellarFormat,
+  bulkCreateEntries
 } from '../controllers/ledgerController';
-import { createLedgerEntryValidation, paginationValidation } from '../middleware/validationSchemas';
+import { 
+  createLedgerEntryValidation, 
+  paginationValidation, 
+  bulkCreateLedgerEntriesValidation 
+} from '../middleware/validationSchemas';
 import { validate } from '../middleware/validator';
 
 const router = Router();
@@ -82,5 +88,17 @@ router.put('/sequence', setLedgerSeq);
  * Increment ledger sequence number
  */
 router.post('/sequence/increment', incrementLedgerSeq);
+
+/**
+ * GET /api/ledger/export/stellar-format
+ * Export ledger state in Stellar account JSON format
+ */
+router.get('/export/stellar-format', exportStellarFormat);
+
+/**
+ * POST /api/ledger/entries/bulk
+ * Create multiple ledger entries in a single operation
+ */
+router.post('/entries/bulk', validate(bulkCreateLedgerEntriesValidation), bulkCreateEntries);
 
 export default router;

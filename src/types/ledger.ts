@@ -103,3 +103,28 @@ export interface LedgerSnapshot {
   networkPassphrase: string;
   entries: LedgerEntry[];
 }
+
+/**
+ * Bulk create request
+ */
+export interface BulkCreateRequest {
+  entries: LedgerEntry[];
+  validateOnly?: boolean;
+}
+
+/**
+ * Bulk create response
+ */
+export interface BulkCreateResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    created: number;
+    entries?: LedgerEntry[];
+  };
+  errors?: Array<{
+    index: number;
+    entry: LedgerEntry;
+    errors: string[];
+  }>;
+}

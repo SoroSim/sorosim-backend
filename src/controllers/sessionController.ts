@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { getSessionStore } from '../store/sessionStore';
-import { CreateSessionOptions, SessionStatus } from '../types/session';
+import { CreateSessionOptions, SessionStatus, SessionFilterOptions } from '../types/session';
 import { parsePaginationParams, createPaginatedResponse } from '../utils/pagination';
 
 /**
@@ -36,9 +36,37 @@ export const createSession = (req: Request, res: Response): void => {
  */
 export const getAllSessions = (req: Request, res: Response): void => {
   try {
-    const { page, limit, includeDeleted } = req.query;
+    const { page, limit, includeDeleted, search, status, tags, startDate, endDate } = req.query;
     const store = getSessionStore();
-    const sessions = store.getAllSessions(includeDeleted === 'true');
+    
+    // Build filter options
+    const filters: SessionFilterOptions = {};
+    
+    if (search) {
+      filters.search = search as string;
+    }
+    
+    if (status) {
+      filters.status = status as SessionStatus;
+    }
+    
+    if (tags) {
+      // Parse comma-separated tags
+      filters.tags = (tags as string).split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+    }
+    
+    if (startDate) {
+      filters.startDate = startDate as string;
+    }
+    
+    if (endDate) {
+      filters.endDate = endDate as string;
+    }
+    
+    // Get sessions with filters applied
+    const sessions = Object.keys(filters).length > 0
+      ? store.getFilteredSessions(filters, includeDeleted === 'true')
+      : store.getAllSessions(includeDeleted === 'true');
     
     // Parse pagination params
     const paginationParams = parsePaginationParams(page as string, limit as string);
