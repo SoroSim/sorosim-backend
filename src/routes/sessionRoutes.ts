@@ -20,7 +20,8 @@ import {
   updateSessionMetadataValidation,
   cleanupSessionsValidation,
   uuidParamValidation,
-  paginationValidation
+  paginationValidation,
+  sessionListValidation
 } from '../middleware/validationSchemas';
 import { validate } from '../middleware/validator';
 
@@ -36,7 +37,7 @@ router.post('/', validate(createSessionValidation), createSession);
  * GET /api/sessions
  * Get all sessions
  */
-router.get('/', validate(paginationValidation), getAllSessions);
+router.get('/', validate(sessionListValidation), getAllSessions);
 
 /**
  * GET /api/sessions/active

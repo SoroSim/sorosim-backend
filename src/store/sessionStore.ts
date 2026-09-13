@@ -5,7 +5,8 @@ import {
   SimulationInvocation,
   SessionStatus,
   CreateSessionOptions,
-  SessionSummary
+  SessionSummary,
+  SessionFilterOptions
 } from '../types/session';
 
 /**
@@ -97,8 +98,57 @@ export class SessionStore {
         status: session.status,
         invocationCount: session.invocationCount,
         name: session.metadata?.name as string | undefined,
+        description: session.metadata?.description as string | undefined,
+        tags: session.metadata?.tags as string[] | undefined,
         deletedAt: session.deletedAt
       }));
+  }
+
+  /**
+   * Get filtered sessions based on search and filter criteria
+   * 
+   * @param filters - Filter options
+   * @param includeDeleted - Whether to include soft-deleted sessions
+   * @returns Array of filtered session summaries
+   */
+  getFilteredSessions(filters: SessionFilterOptions, includeDeleted = false): SessionSummary[] {
+    let sessions = this.getAllSessions(includeDeleted);
+
+    // Apply search filter (matches name or description)
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      sessions = sessions.filter(session => {
+        const nameMatch = session.name?.toLowerCase().includes(searchLower);
+        const descMatch = session.description?.toLowerCase().includes(searchLower);
+        return nameMatch || descMatch;
+      });
+    }
+
+    // Apply status filter
+    if (filters.status) {
+      sessions = sessions.filter(session => session.status === filters.status);
+    }
+
+    // Apply tags filter (session must have ALL specified tags)
+    if (filters.tags && filters.tags.length > 0) {
+      sessions = sessions.filter(session => {
+        if (!session.tags || session.tags.length === 0) {
+          return false;
+        }
+        return filters.tags!.every(tag => session.tags!.includes(tag));
+      });
+    }
+
+    // Apply date range filter (createdAt)
+    if (filters.startDate) {
+      sessions = sessions.filter(session => session.createdAt >= filters.startDate!);
+    }
+
+    if (filters.endDate) {
+      sessions = sessions.filter(session => session.createdAt <= filters.endDate!);
+    }
+
+    return sessions;
   }
 
   /**
