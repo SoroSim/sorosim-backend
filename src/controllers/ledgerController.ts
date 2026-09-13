@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { getMockLedgerStore } from '../store/mockLedgerStore';
-import { LedgerEntry, LedgerEntryType } from '../types/ledger';
+import { LedgerEntry, LedgerEntryType, BulkCreateRequest, BulkCreateResponse } from '../types/ledger';
 import { validateLedgerEntry } from '../utils/ledgerValidation';
 import { parsePaginationParams, createPaginatedResponse } from '../utils/pagination';
 import { StellarExportService } from '../services/stellarExportService';
@@ -394,5 +394,92 @@ export const exportStellarFormat = (_req: Request, res: Response): void => {
       message: 'Failed to export ledger in Stellar format',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
+  }
+};
+
+/**
+ * Bulk create ledger entries
+ */
+export const bulkCreateEntries = (req: Request, res: Response): void => {
+  try {
+    const { entries, validateOnly = false } = req.body as BulkCreateRequest;
+
+    // Validate all entries first (all-or-nothing approach)
+    const validationErrors: Array<{
+      index: number;
+      entry: LedgerEntry;
+      errors: string[];
+    }> = [];
+
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
+
+      // Validate type
+      if (!Object.values(LedgerEntryType).includes(entry.type)) {
+        validationErrors.push({
+          index: i,
+          entry,
+          errors: [`Invalid ledger entry type: ${entry.type}`]
+        });
+        continue;
+      }
+
+      // Validate entry based on type
+      const validation = validateLedgerEntry(entry);
+      if (!validation.valid) {
+        validationErrors.push({
+          index: i,
+          entry,
+          errors: validation.errors || []
+        });
+      }
+    }
+
+    // If any validation errors, return them without creating entries
+    if (validationErrors.length > 0) {
+      res.status(400).json({
+        success: false,
+        message: `Validation failed for ${validationErrors.length} entries`,
+        errors: validationErrors
+      } as BulkCreateResponse);
+      return;
+    }
+
+    // If validateOnly mode, return success without creating
+    if (validateOnly) {
+      res.status(200).json({
+        success: true,
+        message: 'All entries validated successfully',
+        data: {
+          created: 0,
+          entries: []
+        }
+      } as BulkCreateResponse);
+      return;
+    }
+
+    // All validations passed, create all entries
+    const store = getMockLedgerStore();
+    const createdEntries: LedgerEntry[] = [];
+
+    for (const entry of entries) {
+      const storedEntry = store.set(entry);
+      createdEntries.push(storedEntry);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `Successfully created ${createdEntries.length} ledger entries`,
+      data: {
+        created: createdEntries.length,
+        entries: createdEntries
+      }
+    } as BulkCreateResponse);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to bulk create ledger entries',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    } as BulkCreateResponse);
   }
 };
