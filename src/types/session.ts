@@ -73,5 +73,18 @@ export interface SessionSummary {
   status: SessionStatus;
   invocationCount: number;
   name?: string;
+  description?: string;
+  tags?: string[];
   deletedAt?: string; // Soft delete timestamp
+}
+
+/**
+ * Session filter options
+ */
+export interface SessionFilterOptions {
+  search?: string;
+  status?: SessionStatus;
+  tags?: string[];
+  startDate?: string;
+  endDate?: string;
 }
